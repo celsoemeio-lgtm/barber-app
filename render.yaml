@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: barber-app
+    runtime: python
+    region: virginia
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        value: ""  # Deixe VAZIO aqui! Vai configurar direto no Render
+      - key: SECRET_KEY
+        generateValue: true
