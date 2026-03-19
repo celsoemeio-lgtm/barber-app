@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    body { background: #000; color: white; font-family: 'Montserrat', sans-serif; padding: 15px; margin: 0; }
+    
+    .header-area { 
+      display: flex; 
+      align-items: center; 
+      gap: 15px; 
+      margin-bottom: 10px; 
+      padding-bottom: 10px;
+      border-bottom: 1px solid #333;
+    }
+
+    .btn-voltar-img { 
+      width: 150px; 
+      height: 35px; 
+      background: none; 
+      border: none; 
+      cursor: pointer; 
+      flex-shrink: 0; 
+      padding: 0;
+    }
+    .btn-voltar-img img { width: 100%; height: 100%; object-fit: fill; }
+
+    #btnSalvar { 
+      cursor: pointer; 
+      background: #00ffff; 
+      color: #000; 
+      border: none; 
+      height: 35px; 
+      padding: 0 15px; 
+      font-weight: bold; 
+      border-radius: 6px; 
+      text-transform: uppercase; 
+      font-size: 11px;
+      flex-grow: 1;
+    }
+    #btnSalvar:disabled { background: #444; color: #888; }
+
+    h2 { color: #00ffff; font-size: 14px; letter-spacing: 1px; margin: 10px 0; text-transform: uppercase; }
+    
+    label { display: block; margin-top: 15px; color: #00BDB8; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+    
+    input, select { 
+      width: 100%; padding: 12px; margin-top: 5px; background: #1a1a1a; 
+      border: 1px solid #333; color: white; border-radius: 8px; 
+      box-sizing: border-box; font-size: 14px; outline: none; 
+    }
+    input:focus, select:focus { border-color: #00ffff; }
+
+    #msgStatus { 
+      height: 20px; 
+      color: #ff4d4d; 
+      font-size: 12px; 
+      text-align: center; 
+      margin-top: 10px; 
+      font-weight: bold; 
+    }
+
+    hr { border: 0; border-top: 1px solid #333; margin: 20px 0; }
+  </style>
+</head>
+<body>
+
+  <div class="header-area">
+    <button class="btn-voltar-img" onclick="voltar()">
+      <img src="https://lh3.googleusercontent.com/u/0/d/1V1WBS99sZAVN_6oBqmD1xa8MtOxBd73l" alt="VOLTAR">
+    </button>
+    <button id="btnSalvar" onclick="processar()">SALVAR ALTERAÇÕES</button>
+  </div>
+  
+  <h2 id="tituloPagina">CADASTRO / EDIÇÃO</h2>
+
+  <label>BUSCAR CLIENTE EXISTENTE (OPCIONAL)</label>
+  <select id="selectBusca" onchange="carregarDadosDoCliente()">
+    <option value="">-- NOVO CADASTRO --</option>
+  </select>
+
+  <hr>
+
+  <label>NOME COMPLETO</label>
+  <input type="text" id="nomeCli" placeholder="Digite o nome">
+  
+  <label>WHATSAPP</label>
+  <input type="tel" id="whatsCli" placeholder="(00) 00000-0000" oninput="mascaraWhats(this)" maxlength="15">
+  
+  <label>PLANO</label>
+  <select id="planoCli">
+    <option value="Avulso">Avulso</option>
+    <option value="VIP">VIP</option>
+  </select>
+
+  <div id="msgStatus"></div>
+
+  <script>
+    let listaClientes = [];
+    let idxEditando = "";
+
+    window.onload = function() {
+      fetch('/api/clientes/listar')
+        .then(res => res.json())
+        .then(dados => {
+          listaClientes = dados;
+          let select = document.getElementById('selectBusca');
+          select.innerHTML = '<option value="">-- NOVO CADASTRO --</option>';
+          
+          dados.forEach((c, index) => {
+            let opt = document.createElement('option');
+            opt.value = index;
+            opt.text = c.nome;
+            select.add(opt);
+          });
+        });
+    };
+
+    function carregarDadosDoCliente() {
+      const idx = document.getElementById('selectBusca').value;
+      const status = document.getElementById('msgStatus');
+      
+      if(idx === "") {
+        limparCampos();
+        document.getElementById('tituloPagina').innerText = "CADASTRO / EDIÇÃO";
+        idxEditando = "";
+        return;
+      }
+      
+      const cliente = listaClientes[idx];
+      document.getElementById('nomeCli').value = cliente.nome;
+      document.getElementById('whatsCli').value = cliente.whatsapp;
+      document.getElementById('planoCli').value = cliente.plano;
+      document.getElementById('tituloPagina').innerText = "EDITANDO: " + cliente.nome;
+      status.innerText = "";
+      idxEditando = idx;
+    }
+
+    function limparCampos() {
+      document.getElementById('nomeCli').value = "";
+      document.getElementById('whatsCli').value = "";
+      document.getElementById('planoCli').value = "Avulso";
+    }
+
+    function mascaraWhats(i) {
+      let v = i.value.replace(/\D/g, "");
+      v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+      v = v.replace(/(\d{5})(\d)/, "$1-$2");
+      i.value = v;
+    }
+
+    function processar() {
+      const n = document.getElementById('nomeCli').value.trim();
+      const w = document.getElementById('whatsCli').value;
+      const p = document.getElementById('planoCli').value;
+      const status = document.getElementById('msgStatus');
+      const btn = document.getElementById('btnSalvar');
+      
+      if(n === "" || w.length < 14) {
+        status.innerText = "⚠️ NOME E WHATS SÃO OBRIGATÓRIOS!";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = "⌛ PROCESSANDO...";
+
+      fetch('/api/clientes/salvar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: n,
+          whats: w,
+          plano: p,
+          idx: idxEditando
+        })
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.status === "ok") {
+          status.style.color = "#00ffff";
+          status.innerText = "✅ SUCESSO!";
+          setTimeout(voltar, 1000);
+        } else {
+          status.innerText = "❌ ERRO: " + res.status;
+          btn.disabled = false;
+          btn.innerText = "SALVAR ALTERAÇÕES";
+        }
+      })
+      .catch(err => {
+        status.innerText = "❌ ERRO DE CONEXÃO";
+        btn.disabled = false;
+        btn.innerText = "SALVAR ALTERAÇÕES";
+      });
+    }
+
+    function voltar() {
+      window.location.href = '/dashboard';
+    }
+  </script>
+</body>
+</html>

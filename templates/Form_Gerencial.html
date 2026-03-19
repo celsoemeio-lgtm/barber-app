@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+    :root {
+      --bg-dark: #0c0d0f;
+      --bg-card: #111216;
+      --primary: #77e0e6;
+      --primary-dim: rgba(119, 224, 230, 0.15);
+      --text-main: #b0b5be;
+      --text-highlight: #e0e6eb;
+      --border: #2a2d33;
+      --shadow: rgba(119, 224, 230, 0.6);
+      --gold: #ffd700;
+    }
+
+    body { 
+      font-family: 'Roboto', sans-serif; 
+      background-color: var(--bg-dark); 
+      color: var(--text-main); 
+      padding: 10px; margin: 0;
+      overflow-x: hidden;
+    }
+
+    h2 { 
+      text-align: center; color: var(--primary); 
+      text-transform: uppercase; letter-spacing: 3px;
+      font-size: 16px; margin: 25px 0 15px 0;
+      text-shadow: 0 0 10px var(--shadow); 
+    }
+
+    .btn-voltar-img {
+      width: 150px;
+      height: 35px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      outline: none;
+      padding: 0;
+      margin-bottom: 10px;
+    }
+    .btn-voltar-img img { width: 100%; height: 100%; object-fit: fill; }
+
+    .header-bar {
+      display: flex; flex-direction: column; gap: 12px;
+      background: var(--bg-card); padding: 15px;
+      border-radius: 4px; border: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    .filter-group { width: 100%; }
+    
+    label { 
+      display: block; margin-bottom: 4px; font-size: 10px; 
+      color: var(--primary); font-weight: 700; text-transform: uppercase; 
+    }
+
+    input[type="date"] {
+      width: 100%; padding: 12px; background: var(--bg-dark); 
+      border: 1px solid var(--border); color: var(--text-highlight);
+      border-radius: 4px; box-sizing: border-box; font-size: 14px; outline: none;
+    }
+    input[type="date"]:focus { border-color: var(--primary); box-shadow: 0 0 5px var(--shadow); }
+
+    button {
+      width: 100%; padding: 14px; background: var(--primary); color: #000; 
+      border: none; font-weight: 700; text-transform: uppercase; 
+      cursor: pointer; border-radius: 4px; font-size: 14px; transition: 0.3s;
+      letter-spacing: 1px;
+    }
+    button:hover { opacity: 0.8; box-shadow: 0 0 15px var(--shadow); }
+
+    .kpi-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .kpi-card {
+      background: var(--bg-card); padding: 12px; border-radius: 4px;
+      border: 1px solid var(--border); text-align: center;
+      transition: 0.3s;
+    }
+    .kpi-card:hover { border-color: var(--primary); box-shadow: 0 0 8px var(--primary-dim); }
+    .kpi-title { font-size: 8px; color: var(--text-main); text-transform: uppercase; margin-bottom: 4px; }
+    .kpi-value { font-size: 1.1em; font-weight: bold; color: var(--primary); }
+
+    .barber-grid { display: grid; grid-template-columns: 1fr; gap: 25px; margin-top: 15px; }
+    
+    .barber-card { 
+      background: var(--bg-card); 
+      border: 2px solid var(--border); 
+      border-radius: 12px; 
+      overflow: hidden; 
+      position: relative;
+      transition: 0.3s;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    .barber-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 0 20px var(--primary-dim);
+    }
+    
+    .card-header { 
+      height: 230px; 
+      width: 100%; 
+      background-color: #000;
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      position: relative; 
+      border-bottom: 2px solid var(--border);
+      clip-path: polygon(0 0, 100% 0, 100% 90%, 90% 100%, 10% 100%, 0 90%);
+    }
+    
+    .card-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 10%; right: 10%;
+      height: 2px;
+      background: var(--primary);
+      box-shadow: 0 0 10px var(--shadow);
+    }
+
+    .barber-photo { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+    
+    .badge-ocup { 
+      position: absolute; top: 12px; left: 12px; 
+      background: rgba(0,0,0,0.85); 
+      color: var(--primary); padding: 5px 10px; 
+      border-radius: 4px; font-size: 10px; font-weight: bold; 
+      border: 1px solid var(--primary);
+      text-shadow: 0 0 5px var(--shadow);
+      z-index: 10;
+    }
+
+    .badge-vips {
+      position: absolute; top: 12px; right: 12px; 
+      background: rgba(0, 0, 0, 0.85); 
+      color: #fff; padding: 5px 10px; 
+      border-radius: 4px; font-size: 10px; 
+      font-weight: bold; border: 1px solid var(--gold);
+      z-index: 10;
+    }
+    .star-icon { color: var(--gold); margin-right: 4px; }
+
+    .card-body { padding: 18px 15px; }
+    .barber-name { 
+      text-align: center; font-size: 1.3em; font-weight: bold; 
+      color: var(--text-highlight); text-transform: uppercase; 
+      margin-bottom: 18px; letter-spacing: 1px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    
+    .stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+    .stat-item { 
+      background: var(--bg-dark); 
+      padding: 12px 6px; 
+      border-radius: 6px; 
+      text-align: center; 
+      border: 1px solid var(--border); 
+    }
+    .stat-label { font-size: 8px; color: var(--text-main); text-transform: uppercase; display: block; margin-bottom: 2px; }
+    .stat-val { font-size: 13px; font-weight: bold; color: var(--primary); }
+
+    .progress-container { margin: 18px 0; }
+    .progress-info { display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 5px; font-weight: bold; }
+    .progress-bg { 
+      width: 100%; 
+      background: #08090a; 
+      height: 10px; 
+      border-radius: 12px; 
+      border: 1px solid #1a1d21; 
+      overflow: hidden; 
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+    }
+    .progress-fill { 
+      height: 100%; 
+      background: linear-gradient(90deg, #53c4cb 0%, var(--primary) 100%);
+      box-shadow: 0 0 10px var(--shadow); 
+      transition: width 0.6s ease; 
+      border-radius: 12px;
+    }
+    .fill-complete { 
+      background: linear-gradient(90deg, #00e676 0%, #00ff88 100%) !important; 
+      box-shadow: 0 0 12px rgba(0,255,136,0.6) !important; 
+    }
+
+    .meta-tag { 
+      text-align: center; padding: 12px; 
+      border-radius: 8px; font-size: 11px; 
+      font-weight: bold; text-transform: uppercase; 
+      border: 2px solid var(--border); 
+      letter-spacing: 1px;
+    }
+    .meta-batida { 
+      color: #00ff88; border-color: #00ff88; 
+      background: rgba(0,255,136,0.06); 
+      text-shadow: 0 0 5px rgba(0,255,136,0.5);
+    }
+    .meta-pendente { 
+      color: #ff4444; border-color: #ff4444; 
+      background: rgba(255,68,68,0.06); 
+      text-shadow: 0 0 5px rgba(255,68,68,0.5);
+    }
+
+    .loading { 
+      text-align: center; color: var(--primary); 
+      padding: 50px; display: none; 
+      letter-spacing: 2px; font-size: 12px; font-weight: bold; 
+      text-shadow: 0 0 8px var(--shadow);
+    }
+
+    @media (min-width: 600px) {
+      .header-bar { flex-direction: row; align-items: flex-end; }
+      .kpi-container { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+      .barber-grid { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+      body { padding: 25px; }
+      .barber-card { border-width: 1px; }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="btn-voltar-img" onclick="voltarDash()">
+    <img src="https://lh3.googleusercontent.com/u/0/d/1V1WBS99sZAVN_6oBqmD1xa8MtOxBd73l" alt="VOLTAR">
+  </button>
+
+  <h2>RELATÓRIO DE ELITE</h2>
+
+  <div class="header-bar">
+    <div class="filter-group">
+      <label>Data Início</label>
+      <input type="date" id="dataI">
+    </div>
+    <div class="filter-group">
+      <label>Data Fim</label>
+      <input type="date" id="dataF">
+    </div>
+    <div style="flex: 0.5;">
+      <button onclick="executarRelatorio()">BUSCAR DADOS</button>
+    </div>
+  </div>
+
+  <div id="msgLoading" class="loading">SINCROZINANDO BANCO DE DADOS...</div>
+
+  <div id="content" style="display: none;">
+    <div class="kpi-container" id="kpi-list"></div>
+    
+    <h2>RANKING DA EQUIPE</h2>
+    <div class="barber-grid" id="barber-list"></div>
+  </div>
+
+  <script>
+    function voltarDash() {
+      window.location.href = '/dashboard';
+    }
+
+    function executarRelatorio() {
+      const d1 = document.getElementById('dataI').value;
+      const d2 = document.getElementById('dataF').value;
+      if(!d1 || !d2) return alert("Por favor, selecione as datas.");
+      
+      document.getElementById('msgLoading').style.display = 'block';
+      document.getElementById('content').style.display = 'none';
+
+      fetch('/api/relatorios/gerencial', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data_inicio: d1, data_fim: d2 })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('msgLoading').style.display = 'none';
+        document.getElementById('content').style.display = 'block';
+        
+        if(data.error) {
+          alert("Erro: " + data.error);
+          return;
+        }
+
+        const g = data.geral;
+        document.getElementById('kpi-list').innerHTML = `
+          <div class="kpi-card"><div class="kpi-title">Faturamento</div><div class="kpi-value">R$ ${g.fatBruto.toFixed(0)}</div></div>
+          <div class="kpi-card"><div class="kpi-title">Novos Clientes</div><div class="kpi-value">${g.clientesComuns}</div></div>
+          <div class="kpi-card"><div class="kpi-title">VIPs Ativos</div><div class="kpi-value">${g.assinaturas}</div></div>
+          <div class="kpi-card"><div class="kpi-title">Ticket Médio</div><div class="kpi-value">R$ ${g.ticketMedio.toFixed(0)}</div></div>
+        `;
+
+        let barberHTML = '';
+        data.barbeiros.forEach(b => {
+          const metaStatus = b.metaAtingida ? 'meta-batida' : 'meta-pendente';
+          const metaTexto = b.metaAtingida ? 'Meta Alcançada' : 'Meta Pendente';
+          const corBarra = b.metaAtingida ? 'fill-complete' : '';
+          const foto = b.foto || 'https://via.placeholder.com/400x300?text=Barbeiro';
+          
+          barberHTML += `
+            <div class="barber-card">
+              <div class="card-header">
+                <img src="${foto}" class="barber-photo" alt="Foto de ${b.nome}">
+                <div class="badge-ocup">${b.ocupacao}% OCUP.</div>
+                <div class="badge-vips"><span class="star-icon">★</span>${b.vips} VIPs</div>
+              </div>
+              <div class="card-body">
+                <div class="barber-name">${b.nome}</div>
+                <div class="stats-row">
+                  <div class="stat-item"><span class="stat-label">Atend.</span><span class="stat-val">${b.atendimentos}</span></div>
+                  <div class="stat-item"><span class="stat-label">Total</span><span class="stat-val">R$ ${b.faturamento.toFixed(0)}</span></div>
+                  <div class="stat-item"><span class="stat-label">Ticket</span><span class="stat-val">R$ ${b.ticket.toFixed(0)}</span></div>
+                </div>
+                
+                <div class="progress-container">
+                  <div class="progress-info"><span>PROGRESSO META</span><span>${b.percentualMeta}%</span></div>
+                  <div class="progress-bg">
+                    <div class="progress-fill ${corBarra}" style="width: ${b.percentualMeta}%"></div>
+                  </div>
+                </div>
+
+                <div class="meta-tag ${metaStatus}">${metaTexto}</div>
+              </div>
+            </div>
+          `;
+        });
+        document.getElementById('barber-list').innerHTML = barberHTML;
+      })
+      .catch(err => {
+        document.getElementById('msgLoading').style.display = 'none';
+        alert("Erro ao carregar dados: " + err.message);
+      });
+    }
+
+    window.onload = function() {
+      const hoje = new Date();
+      const mesPassado = new Date();
+      mesPassado.setDate(hoje.getDate() - 30);
+      
+      document.getElementById('dataF').value = hoje.toISOString().split('T')[0];
+      document.getElementById('dataI').value = mesPassado.toISOString().split('T')[0];
+    };
+  </script>
+</body>
+</html>

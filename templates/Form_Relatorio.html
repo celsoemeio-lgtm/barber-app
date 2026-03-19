@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root { 
+      --tots-cyan: #00ffff;
+      --card-bg-solid: #001a1a; 
+      --text: #ffffff;
+    }
+    
+    body { 
+      font-family: 'Oswald', sans-serif; 
+      background-color: #07090f; 
+      color: var(--text); 
+      margin: 0; 
+      padding: 10px; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+    }
+    
+    .nav-header { 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      width: 300px; 
+      margin-bottom: 15px; 
+    }
+    
+    .btn-voltar-personalizado { 
+      width: 150px; 
+      height: 35px; 
+      background: none; 
+      border: none; 
+      cursor: pointer; 
+      padding: 0; 
+      display: block;
+    }
+    .btn-voltar-personalizado img { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: contain;
+    }
+    
+    input[type="date"] { 
+      background: #001a1a; 
+      border: 1px solid var(--tots-cyan); 
+      color: white; 
+      padding: 4px; 
+      border-radius: 4px; 
+      font-family: 'Oswald'; 
+      outline: none; 
+      font-size: 12px;
+    }
+
+    .card-container, .servicos-box { 
+      width: 300px; 
+      box-sizing: border-box; 
+    }
+
+    .card-container { 
+      height: 400px; 
+      background-color: var(--card-bg-solid); 
+      border: 2px solid var(--tots-cyan);
+      border-radius: 12px; 
+      position: relative; 
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.2); 
+      overflow: hidden; 
+      margin-bottom: 10px; 
+    }
+
+    .vip-stars {
+      position: absolute; top: 15px; right: 15px;
+      display: flex; flex-direction: row-reverse; gap: 4px; z-index: 10;
+    }
+    .star-vip { 
+      width: 22px; 
+      height: 22px; 
+      filter: drop-shadow(0 0 5px #ffcf00); 
+      animation: pulse-star 2s infinite; 
+    }
+    @keyframes pulse-star { 
+      0% { transform: scale(1); opacity: 0.8; } 
+      50% { transform: scale(1.15); opacity: 1; } 
+      100% { transform: scale(1); opacity: 0.8; } 
+    }
+
+    .rating-block { 
+      position: absolute; top: 25px; left: 20px; text-align: center; z-index: 3; 
+    }
+    .rating-value { 
+      font-size: 36px; font-weight: 700; color: #fff; 
+    }
+    .rating-label { 
+      font-size: 9px; color: var(--tots-cyan); display: block; margin-top: -5px; 
+    }
+
+    .photo-central {
+      position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+      width: 250px; height: 250px; z-index: 1; object-fit: cover;
+      mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+    }
+
+    .name-banner {
+      position: absolute; top: 225px; width: 100%; text-align: center;
+      background: rgba(0, 0, 0, 0.8); 
+      border-top: 1px solid var(--tots-cyan); 
+      border-bottom: 1px solid var(--tots-cyan); 
+      padding: 6px 0; z-index: 2;
+    }
+    .user-name { 
+      font-size: 20px; font-weight: 700; text-transform: uppercase; margin: 0; color: var(--tots-cyan); letter-spacing: 1px; 
+    }
+
+    .stats-grid { 
+      position: absolute; bottom: 50px; width: 100%; display: flex; justify-content: center; gap: 20px; z-index: 2; 
+    }
+    .stat-item { text-align: center; }
+    .stat-val { font-size: 20px; font-weight: 700; display: block; color: #fff; }
+    .stat-lbl { font-size: 9px; text-transform: uppercase; color: var(--tots-cyan); opacity: 0.9; }
+
+    .meta-container { 
+      position: absolute; bottom: 20px; width: 70%; left: 15%; z-index: 2; 
+    }
+    .bar-bg { 
+      background: rgba(255,255,255,0.05); 
+      height: 6px; 
+      border-radius: 3px; 
+      border: 0.5px solid rgba(0,255,255,0.1); 
+    }
+    .bar-fill { 
+      height: 100%; 
+      background: var(--tots-cyan); 
+      box-shadow: 0 0 10px var(--tots-cyan); 
+      transition: 1s width; 
+    }
+
+    .servicos-box { 
+      background: rgba(13, 17, 23, 0.9); 
+      border-radius: 8px; 
+      padding: 12px; 
+      border: 1px solid #1f2937; 
+    }
+    .servicos-header { 
+      color: var(--tots-cyan); 
+      font-size: 12px; 
+      font-weight: bold; 
+      border-bottom: 1px solid #1f2937; 
+      padding-bottom: 8px; 
+      margin-bottom: 10px; 
+      text-transform: uppercase; 
+      text-align: center; 
+    }
+    .item-row { 
+      display: flex; 
+      justify-content: space-between; 
+      padding: 7px 0; 
+      border-bottom: 1px solid rgba(255,255,255,0.03); 
+      font-size: 11px; 
+    }
+    .srv-name { 
+      color: #ccc; 
+      overflow: hidden; 
+      white-space: nowrap; 
+      text-overflow: ellipsis; 
+      max-width: 170px; 
+    }
+    .srv-val { 
+      font-weight: bold; 
+      color: #fff; 
+    }
+  </style>
+</head>
+<body>
+
+  <div class="nav-header">
+    <button class="btn-voltar-personalizado" onclick="voltar()">
+      <img src="https://lh3.googleusercontent.com/u/0/d/1V1WBS99sZAVN_6oBqmD1xa8MtOxBd73l" alt="VOLTAR">
+    </button>
+    <input type="date" id="dataFiltro" onchange="atualizar()">
+  </div>
+
+  <div id="conteudo">Carregando dados...</div>
+
+  <script>
+    let usuarioAtual = {{ user|tojson }};
+
+    window.onload = () => {
+      const hoje = new Date().toISOString().split('T')[0];
+      document.getElementById('dataFiltro').value = hoje;
+      atualizar();
+    };
+
+    function atualizar() {
+      const data = document.getElementById('dataFiltro').value;
+
+      fetch('/api/relatorios/diario', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: data })
+      })
+      .then(res => res.json())
+      .then(r => {
+        if (r.erro) {
+          document.getElementById('conteudo').innerHTML = `<p style="color:red; text-align:center">${r.erro}</p>`;
+          return;
+        }
+        exibir(r);
+      });
+    }
+
+    function exibir(r) {
+      const fmt = (v) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      
+      const vipsCorte = r.listaDetalhada.filter(item => 
+        item.servicoOriginal && item.servicoOriginal.toUpperCase().includes("CORTE") && 
+        item.tipo && item.tipo.toUpperCase().includes("VIP")
+      );
+
+      const estrelasHtml = vipsCorte.map(() => `
+        <img src="https://img.icons8.com/fluency/48/star.png" class="star-vip" title="Corte VIP">
+      `).join('');
+
+      document.getElementById('conteudo').innerHTML = `
+        <div class="card-container">
+          <div class="vip-stars">${estrelasHtml}</div>
+          
+          <div class="rating-block">
+            <span class="rating-value">${r.ocupacao}%</span>
+            <span class="rating-label">OCUPAÇÃO</span>
+          </div>
+
+          <img src="${r.foto || 'https://via.placeholder.com/250'}" class="photo-central" onerror="this.src='https://via.placeholder.com/250'">
+
+          <div class="name-banner">
+            <h2 class="user-name">${r.usuario}</h2>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="stat-val">${r.atendimentosTotal}</span>
+              <span class="stat-lbl">Atendimentos</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-val">${fmt(r.comissaoValor).replace("R$", "")}</span>
+              <span class="stat-lbl">Comissão</span>
+            </div>
+          </div>
+
+          <div class="meta-container">
+            <div class="bar-bg">
+              <div class="bar-fill" style="width: ${r.metaAtingida}%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="servicos-box">
+          <div class="servicos-header">⚔ SERVIÇOS DO DIA</div>
+          ${r.listaDetalhada.length > 0 ? r.listaDetalhada.map(i => `
+            <div class="item-row">
+              <span class="srv-name">${i.cliente} - ${i.servico} ${i.tipo.includes('VIP') ? '⭐' : ''}</span>
+              <span class="srv-val">${fmt(i.valor)}</span>
+            </div>
+          `).join('') : '<div style="font-size:11px; color:#666; text-align:center">Nenhum serviço registrado hoje.</div>'}
+        </div>
+      `;
+    }
+
+    function voltar() {
+      window.location.href = '/dashboard';
+    }
+  </script>
+</body>
+</html>

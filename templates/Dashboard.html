@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dashboard Barbearia</title>
+    <style>
+        body { background-color: #000; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; margin: 0; padding: 15px; font-family: 'Montserrat', sans-serif; overflow-x: hidden; width: 100%; max-width: 350px; box-sizing: border-box; }
+        .identificacao-container { border: 3px solid #00BDB8; border-radius: 12px; padding: 12px; margin-bottom: 25px; width: 100%; background: rgba(18, 20, 24, 0.9); display: flex; align-items: center; gap: 15px; box-shadow: 0 0 15px rgba(80, 227, 194, 0.3); box-sizing: border-box; }
+        .foto-perfil { width: 60px; height: 60px; border-radius: 12px; border: 2px solid #00BDB8; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .foto-perfil img { width: 100%; height: 100%; object-fit: cover; }
+        .info-user { text-align: left; }
+        .info-user span { display: block; font-size: 10px; color: #00BDB8; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; opacity: 0.8; }
+        #nome-exibido { font-size: 22px; color: #ffffff; font-weight: bold; text-transform: uppercase; }
+        .container-menu { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+        .botao-imagem { background: none; border: none; padding: 0; cursor: pointer; transition: transform 0.2s; width: 100%; }
+        .botao-imagem img { width: 100%; height: auto; display: block; border-radius: 8px; }
+        .botao-imagem:hover { transform: scale(1.02); }
+        .btn-trocar { margin-top: 25px; background: transparent; border: 2px solid #00BDB8; color: #00BDB8; padding: 12px; border-radius: 30px; font-size: 14px; font-weight: bold; cursor: pointer; text-transform: uppercase; width: 100%; }
+        .admin-only { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="identificacao-container">
+        <div class="foto-perfil" id="container-foto">
+            <span style="font-size: 24px; color: #00BDB8;">👤</span>
+        </div>
+        <div class="info-user">
+            <span id="cargo-user">{{ user.nivel if user.nivel == 'ADM' else 'BARBEIRO' }}</span>
+            <strong id="nome-exibido">{{ user.nome }}</strong>
+        </div>
+    </div>
+
+    <div class="container-menu">
+        <button onclick="navegar('Form_Atendimento')" class="botao-imagem">
+            <img src="https://lh3.googleusercontent.com/u/0/d/1M58LmAt9pp8sY97Vm3_aiQdtuQGiZfgr" alt="Atendimento">
+        </button>
+        <button onclick="navegar('Painel_Diario')" class="botao-imagem">
+            <img src="https://lh3.googleusercontent.com/d/1vk-wKMKRF_6EJ43sh1kncBqfW5y2EWp2" alt="Agendamentos">
+        </button>
+        <button onclick="navegar('Form_Relatorio')" class="botao-imagem">
+            <img src="https://lh3.googleusercontent.com/u/0/d/1fjpjOx2VDpAgllnZbWq7uRUveC7D0NTd" alt="Relatório">
+        </button>
+        <button id="btn-cliente" onclick="navegar('Form_Cliente')" class="botao-imagem admin-only">
+            <img src="https://lh3.googleusercontent.com/u/0/d/1AWRE9p_5poJHwEc8JwvJEb3_RWuTIkgY" alt="Cadastro">
+        </button>
+        <button id="btn-servicos" onclick="navegar('Form_Servicos')" class="botao-imagem admin-only">
+            <img src="https://lh3.googleusercontent.com/u/0/d/1ir6b5UHgBle5r9JCr1uB78QMWzTGvp6L" alt="Serviços">
+        </button>
+        <button id="btn-barbeiros" onclick="navegar('Form_Barbeiros')" class="botao-imagem admin-only">
+            <img src="https://lh3.googleusercontent.com/u/0/d/1vmJGclkxRLfGwbY1-0f3YTxrUeROIGDE" alt="Profissional">
+        </button>
+        <button id="btn-demostrativo" onclick="navegar('Relatorio_folha')" class="botao-imagem admin-only">
+            <img src="https://lh3.googleusercontent.com/u/0/d/1pL6ZeT1kDcLBmTlAeOnsZ2hwSlrVOQL1" alt="Demostrativo">
+        </button>
+        <button id="btn-gerencial" onclick="navegar('Form_Gerencial')" class="botao-imagem admin-only">
+            <img src="https://lh3.googleusercontent.com/u/0/d/1cMbJfie1as1W4bfx6xn0QDIh-UFQw8PE" alt="Gerencial">
+        </button>
+        <button onclick="logout()" class="botao-imagem">
+            <img src="https://lh3.googleusercontent.com/u/0/d/1PSCJUFvW5COJcA77m9joMtDOeom5kjiO" alt="Sair">
+        </button>
+    </div>
+
+    <script>
+        function navegar(pagina) {
+            window.location.href = '/' + pagina.toLowerCase();
+        }
+        
+        function logout() {
+            window.location.href = '/logout';
+        }
+        
+        // Mostrar botões de admin se o usuário for ADM
+        window.onload = function() {
+            if ('{{ user.nivel }}' === 'ADM') {
+                document.querySelectorAll('.admin-only').forEach(btn => {
+                    btn.style.display = 'block';
+                });
+            }
+        }
+    </script>
+</body>
+</html>

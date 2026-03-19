@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root { 
+      --bg-dark: #07090f; --card-bg: #0d1117; --accent: #00ffff; 
+      --text: #ffffff; --border: #1f2937; 
+    }
+    body { 
+      font-family: 'Roboto', sans-serif; background-color: var(--bg-dark); 
+      color: var(--text); margin: 0; display: flex; justify-content: center; 
+      align-items: center; height: 100vh; overflow: hidden;
+    }
+    .login-card { 
+      background: var(--card-bg); padding: 30px; border-radius: 8px; 
+      border: 1px solid var(--border); width: 100%; max-width: 320px; 
+      text-align: center; box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+    }
+    h2 { color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; }
+    p { font-size: 13px; color: #8b949e; margin-bottom: 20px; }
+    
+    input { 
+      width: 100%; padding: 12px; margin-bottom: 15px; background: #000; 
+      border: 1px solid var(--border); color: #fff; border-radius: 4px; 
+      font-size: 16px; text-align: center; box-sizing: border-box;
+    }
+    input:focus { border-color: var(--accent); outline: none; }
+    
+    button { 
+      width: 100%; padding: 14px; background: var(--accent); color: #000; 
+      border: none; border-radius: 4px; font-weight: bold; cursor: pointer; 
+      text-transform: uppercase; transition: 0.3s;
+    }
+    button:hover { background: #00cccc; box-shadow: 0 0 10px var(--accent); }
+    
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <h2>Agendamento</h2>
+    
+    <div id="step1">
+      <p>Informe seu WhatsApp para acessar:</p>
+      <input type="tel" id="whatsapp" placeholder="(00) 00000-0000" maxlength="15" oninput="mascaraTel(this)">
+      <button onclick="verificar()">PRÓXIMO</button>
+    </div>
+
+    <div id="step2" class="hidden">
+      <p>Novo por aqui?<br>Qual o seu nome?</p>
+      <input type="text" id="nome_novo" placeholder="Digite seu nome">
+      <button onclick="cadastrar()">FINALIZAR CADASTRO</button>
+    </div>
+  </div>
+
+  <script>
+    function mascaraTel(i) {
+      let v = i.value.replace(/\D/g, "");
+      if (v.length > 11) v = v.slice(0, 11);
+      v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+      v = v.replace(/(\d)(\d{4})$/, "$1-$2");
+      i.value = v;
+    }
+
+    function verificar() {
+      const cel = document.getElementById('whatsapp').value;
+      if (cel.length < 14) return alert("Por favor, digite o número completo.");
+
+      fetch('/login_cliente', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({celular: cel})
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.status === "EXISTENTE") {
+          window.location.href = res.redirect;
+        } else {
+          document.getElementById('step1').classList.add('hidden');
+          document.getElementById('step2').classList.remove('hidden');
+        }
+      });
+    }
+
+    function cadastrar() {
+      const nome = document.getElementById('nome_novo').value;
+      const cel = document.getElementById('whatsapp').value;
+      if (!nome) return alert("Por favor, digite seu nome.");
+
+      fetch('/login_cliente', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({nome: nome, celular: cel})
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.success) {
+          window.location.href = res.redirect;
+        }
+      });
+    }
+  </script>
+</body>
+</html>

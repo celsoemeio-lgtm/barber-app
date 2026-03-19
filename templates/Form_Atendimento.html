@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    body { background-color: #121418; color: #ffffff; font-family: 'Montserrat', sans-serif; padding: 15px; margin: 0; width: 100%; box-sizing: border-box; overflow-x: hidden; }
+    label { display: block; margin-bottom: 5px; color: #00BDB8; font-weight: bold; font-size: 14px; text-transform: uppercase; }
+    select, input { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #2d323a; background: #1a1d23; color: white; margin-bottom: 15px; box-sizing: border-box; font-size: 16px; outline: none; }
+    select:focus, input:focus { border-color: #00BDB8; }
+    .btn-add { background: #50e3c2; color: #000; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 20px; text-transform: uppercase; }
+    .lista-itens { background: #1a1d23; border: 2px solid #2d323a; border-radius: 6px; padding: 10px; margin-bottom: 15px; min-height: 60px; }
+    .item-linha { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #2d323a; font-size: 14px; }
+    .btn-del { background: #ff4d4d; color: white; border: none; border-radius: 4px; padding: 6px 10px; cursor: pointer; font-weight: bold; }
+    .total-caixa { font-size: 24px; text-align: right; color: #50e3c2; font-weight: bold; margin-bottom: 20px; border-top: 1px solid #2d323a; padding-top: 10px; }
+    .btn-finalizar { width: 100%; padding: 18px; background: #00BDB8; color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 18px; text-transform: uppercase; }
+    #msg { text-align: center; margin-top: 15px; font-weight: bold; min-height: 25px; font-size: 14px; }
+    
+    .header-area { display: flex; align-items: center; margin-bottom: 20px; gap: 15px; }
+    .btn-voltar-img { width: 150px; height: 35px; padding: 0; background: none; border: none; cursor: pointer; flex-shrink: 0; }
+    .btn-voltar-img img { width: 100%; height: 100%; object-fit: fill; }
+    .txt-header { margin: 0; font-size: 18px; color: #50e3c2; font-weight: bold; text-transform: uppercase; }
+    
+    /* BOTÃO INVISÍVEL - só para uso do JavaScript */
+    #btnCorrigirInvisivel { display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="header-area">
+    <button class="btn-voltar-img" onclick="voltarDashboard()">
+      <img src="https://lh3.googleusercontent.com/u/0/d/1V1WBS99sZAVN_6oBqmD1xa8MtOxBd73l" alt="VOLTAR">
+    </button>
+    <h2 class="txt-header">ATENDIMENTO</h2>
+  </div>
+
+  <label>💈 BARBEIRO RESPONSÁVEL</label>
+  <select id="barbeiro"><option value="">Carregando...</option></select>
+
+  <label>👤 CLIENTE</label>
+  <select id="cliente"><option value="">Carregando...</option></select>
+
+  <label>🛠️ ADICIONAR SERVIÇO</label>
+  <select id="servico_select"><option value="">Carregando...</option></select>
+  
+  <!-- BOTÃO INVISÍVEL (só para clique automático) -->
+  <button id="btnCorrigirInvisivel" onclick="corrigirSelect()"></button>
+
+  <button class="btn-add" onclick="adicionarItem()">➕ ADICIONAR À COMANDA</button>
+
+  <div id="carrinho" class="lista-itens">
+    <div style="color:#666; font-size: 12px; text-align: center;">Nenhum serviço selecionado...</div>
+  </div>
+
+  <div class="total-caixa">TOTAL: R$ <span id="txt_total" data-bruto="0">0,00</span></div>
+  <label>💵 VALOR PAGO (R$)</label>
+  <input type="text" id="valor_pago" placeholder="0,00">
+
+  <button id="btn-fim" class="btn-finalizar" onclick="finalizarVenda()">FINALIZAR ATENDIMENTO</button>
+  <div id="msg"></div>
+
+  <script>
+    let servicosDB = [];
+    let itensVenda = [];
+    let usuarioAtual = {{ user|tojson }};
+
+    // ===== FUNÇÃO QUE FUNCIONA (A MESMA DO BOTÃO) =====
+    function corrigirSelect() {
+      console.log("🔧 Corrigindo select automaticamente...");
+      
+      fetch('/api/servicos/listar')
+        .then(res => res.json())
+        .then(servicos => {
+          servicosDB = servicos;
+          
+          let htmlS = '<option value="">Escolha...</option>';
+          
+          servicos.forEach(s => {
+            let preco = typeof s.preco === 'number' ? s.preco : parseFloat(s.preco) || 0;
+            let precoFormatado = preco.toFixed(2).replace('.', ',');
+            htmlS += `<option value="${s.nome}" data-preco="${preco}">${s.nome} - R$ ${precoFormatado}</option>`;
+          });
+          
+          document.getElementById('servico_select').innerHTML = htmlS;
+          console.log("✅ Select corrigido automaticamente");
+        })
+        .catch(err => console.error("Erro na correção:", err));
+    }
+
+    // ===== CARREGAMENTO INICIAL =====
+    window.addEventListener('load', function() {
+      // Primeiro carrega barbeiros e clientes
+      fetch('/api/vendas/dados_iniciais')
+        .then(res => res.json())
+        .then(res => {
+          if(res.erro) {
+            document.getElementById("msg").innerHTML = "Erro: " + res.erro;
+            return;
+          }
+          
+          // Barbeiros
+          let htmlB = '<option value="">Selecione...</option>';
+          if(res.barbeiros) {
+            res.barbeiros.forEach(b => {
+              let sel = (usuarioAtual.nome && b.trim().toLowerCase() === usuarioAtual.nome.trim().toLowerCase()) ? "selected" : "";
+              htmlB += `<option value="${b}" ${sel}>${b}</option>`;
+            });
+          }
+          document.getElementById("barbeiro").innerHTML = htmlB;
+
+          // Clientes
+          let htmlC = '<option value="">Selecione...</option>';
+          if(res.clientes) {
+            res.clientes.forEach(c => {
+              htmlC += `<option value="${c.nome}" data-plano="${c.plano}">${c.nome} (${c.plano})</option>`;
+            });
+          }
+          document.getElementById("cliente").innerHTML = htmlC;
+        });
+      
+      // AGORA: programa um clique no botão invisível depois de 500ms
+      setTimeout(function() {
+        document.getElementById('btnCorrigirInvisivel').click();
+      }, 500);
+    });
+
+    function adicionarItem() {
+      let selC = document.getElementById("cliente");
+      let selectServico = document.getElementById("servico_select");
+      let nomeS = selectServico.value;
+      
+      if (!nomeS || !selC.value) {
+        alert("Selecione Cliente e Serviço!");
+        return;
+      }
+      
+      let precoS = selectServico.options[selectServico.selectedIndex].getAttribute('data-preco');
+      let plano = selC.options[selC.selectedIndex].getAttribute("data-plano");
+      let precoFinal = parseFloat(precoS) || 0;
+      
+      if (plano === "VIP" && nomeS.toUpperCase().includes("CORTE")) {
+        precoFinal = 0;
+      }
+      
+      itensVenda.push({ nome: nomeS, preco: precoFinal });
+      atualizarGrid();
+    }
+
+    function atualizarGrid() {
+      let total = 0;
+      let html = "";
+      
+      itensVenda.forEach((item, index) => {
+        total += item.preco;
+        let precoFormatado = item.preco.toFixed(2).replace('.', ',');
+        html += `<div class="item-linha">`;
+        html += `<span>${item.nome} - R$ ${precoFormatado}</span>`;
+        html += `<button class="btn-del" onclick="removerItem(${index})">X</button>`;
+        html += `</div>`;
+      });
+      
+      document.getElementById("carrinho").innerHTML = html || '<div style="color:#666; font-size: 12px; text-align: center;">Nenhum serviço selecionado...</div>';
+      
+      let totalFormatado = total.toFixed(2).replace('.', ',');
+      document.getElementById("txt_total").innerText = totalFormatado;
+      document.getElementById("valor_pago").value = totalFormatado;
+    }
+
+    function removerItem(index) {
+      itensVenda.splice(index, 1);
+      atualizarGrid();
+    }
+
+    function voltarDashboard() {
+      window.location.href = '/dashboard';
+    }
+
+    function finalizarVenda() {
+      let btn = document.getElementById("btn-fim");
+      let msg = document.getElementById("msg");
+      
+      if (itensVenda.length === 0) {
+        alert("Adicione ao menos um serviço!");
+        return;
+      }
+
+      btn.disabled = true;
+      msg.innerHTML = "⌛ Gravando...";
+
+      let dados = {
+        cliente: document.getElementById("cliente").value,
+        barbeiro: document.getElementById("barbeiro").value,
+        valorPago: document.getElementById("valor_pago").value,
+        itens: itensVenda,
+        plano: document.getElementById("cliente").options[document.getElementById("cliente").selectedIndex].getAttribute("data-plano")
+      };
+
+      fetch('/api/vendas/finalizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.sucesso) {
+          msg.innerHTML = "✅ Sucesso!";
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 1500);
+        } else {
+          msg.innerHTML = "❌ Erro: " + (res.msg || res.erro);
+          btn.disabled = false;
+        }
+      })
+      .catch(err => {
+        msg.innerHTML = "❌ Erro de conexão!";
+        btn.disabled = false;
+      });
+    }
+  </script>
+</body>
+</html>

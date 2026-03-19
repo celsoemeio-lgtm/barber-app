@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <base target="_top">
+  
+  <style>
+    body { background: #000; color: white; font-family: 'Montserrat', sans-serif; padding: 15px; margin: 0; width: 100%; box-sizing: border-box; overflow-x: hidden; }
+    
+    .header-area { display: flex; align-items: center; margin-bottom: 20px; gap: 15px; }
+    .btn-voltar-img { width: 150px; height: 35px; padding: 0; background: none; border: none; cursor: pointer; flex-shrink: 0; }
+    .btn-voltar-img img { width: 100%; height: 100%; object-fit: fill; }
+    
+    h2 { color: #00ffff; font-size: 16px; letter-spacing: 1px; margin: 0; text-transform: uppercase; }
+    
+    label { display: block; margin-top: 15px; color: #00BDB8; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+    
+    input, select { 
+      width: 100%; padding: 14px; margin-top: 5px; background: #1a1a1a; 
+      border: 1px solid #333; color: white; border-radius: 8px; 
+      box-sizing: border-box; font-size: 16px; outline: none; 
+    }
+    input:focus, select:focus { border-color: #00ffff; }
+
+    #msgStatus { 
+      height: 35px; 
+      color: #ff4d4d; 
+      font-size: 14px; 
+      text-align: center; 
+      margin-top: 15px; 
+      font-weight: bold; 
+    }
+
+    .btn-principal { 
+      width: 100%; padding: 16px; margin-top: 10px; background: #00ffff; 
+      color: #000; border: none; font-weight: bold; cursor: pointer; 
+      border-radius: 8px; font-size: 16px; text-transform: uppercase; 
+    }
+    .btn-principal:disabled { background: #444; color: #888; }
+    
+    option { background: #1a1a1a; color: white; }
+  </style>
+</head>
+<body>
+
+  <div class="header-area">
+    <button class="btn-voltar-img" onclick="voltar()">
+      <img src="https://lh3.googleusercontent.com/u/0/d/1V1WBS99sZAVN_6oBqmD1xa8MtOxBd73l" alt="VOLTAR">
+    </button>
+    <h2 id="tituloPagina">MANUTENÇÃO DE SERVIÇOS</h2>
+  </div>
+  
+  <label>BUSCAR SERVIÇO EXISTENTE (OPCIONAL)</label>
+  <select id="selectSrv" onchange="carregarServico()">
+    <option value="">-- NOVO SERVIÇO --</option>
+  </select>
+
+  <hr style="border: 0; border-top: 1px solid #333; margin-top: 20px;">
+
+  <label>NOME DO SERVIÇO</label>
+  <input type="text" id="nomeSrv" placeholder="Ex: CORTE DEGRADÊ">
+  
+  <label>PREÇO (R$)</label>
+  <input type="tel" id="precoSrv" placeholder="0,00" oninput="mascaraMoeda(this)">
+
+  <div id="msgStatus"></div>
+
+  <button id="btnSalvar" class="btn-principal" onclick="processar()">SALVAR SERVIÇO</button>
+
+  <script>
+    let listaServicos = [];
+
+    window.onload = function() {
+      carregarServicos();
+    };
+
+    function carregarServicos() {
+      fetch('/api/servicos/nomes')
+        .then(res => res.json())
+        .then(dados => {
+          listaServicos = dados;
+          let select = document.getElementById('selectSrv');
+          select.innerHTML = '<option value="">-- NOVO SERVIÇO --</option>';
+          
+          dados.forEach((s, index) => {
+            let opt = document.createElement('option');
+            opt.value = index;
+            opt.text = s.nome;
+            select.add(opt);
+          });
+        })
+        .catch(err => {
+          console.error('Erro ao carregar serviços:', err);
+        });
+    }
+
+    function carregarServico() {
+      const idx = document.getElementById('selectSrv').value;
+      const titulo = document.getElementById('tituloPagina');
+      
+      if(idx === "") {
+        document.getElementById('nomeSrv').value = "";
+        document.getElementById('precoSrv').value = "";
+        titulo.innerText = "NOVO SERVIÇO";
+        return;
+      }
+      
+      const srv = listaServicos[idx];
+      document.getElementById('nomeSrv').value = srv.nome;
+      document.getElementById('precoSrv').value = srv.preco;
+      titulo.innerText = "EDITANDO: " + srv.nome;
+    }
+
+    function mascaraMoeda(i) {
+      let v = i.value.replace(/\D/g,'');
+      if(v === "") v = "0";
+      v = (v/100).toFixed(2) + '';
+      v = v.replace(".", ",");
+      i.value = v;
+    }
+
+    function processar() {
+      const n = document.getElementById('nomeSrv').value.trim();
+      const p = document.getElementById('precoSrv').value;
+      const status = document.getElementById('msgStatus');
+      const btn = document.getElementById('btnSalvar');
+      
+      if(n === "" || p === "" || p === "0,00") {
+        status.innerText = "⚠️ PREENCHA NOME E PREÇO!";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = "⌛ PROCESSANDO...";
+
+      fetch('/api/servicos/salvar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: n, preco: p })
+      })
+      .then(res => res.json())
+      .then(res => {
+        if(res.status === "ok") {
+          status.style.color = "#00ffff";
+          status.innerText = "✅ SUCESSO!";
+          setTimeout(voltar, 1000);
+        } else {
+          status.innerText = "❌ ERRO: " + res.status;
+          btn.disabled = false;
+          btn.innerText = "SALVAR SERVIÇO";
+        }
+      })
+      .catch(err => {
+        status.innerText = "❌ ERRO DE CONEXÃO";
+        btn.disabled = false;
+        btn.innerText = "SALVAR SERVIÇO";
+      });
+    }
+
+    function voltar() {
+      window.location.href = '/dashboard';
+    }
+  </script>
+</body>
+</html>

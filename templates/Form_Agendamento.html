@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body { background-color: #0f1116; color: white; font-family: 'Montserrat', sans-serif; padding: 15px; margin: 0; overflow-x: hidden; }
+    .header { text-align: center; margin-bottom: 20px; }
+    .header h2 { color: #50e3c2; margin: 0; font-size: 18px; letter-spacing: 1px; }
+    
+    #areaBotaoVoltar { display: none; margin-bottom: 15px; }
+    .btn-voltar-link { background: none; border: none; color: #888; cursor: pointer; font-size: 12px; text-transform: uppercase; padding: 0; }
+
+    .info-topo { 
+      background: rgba(80, 227, 194, 0.1); padding: 15px; border-radius: 8px; 
+      margin-bottom: 20px; border-left: 5px solid #50e3c2; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    #displayInfo { font-size: 14px; line-height: 1.6; }
+
+    .campo { margin-bottom: 20px; }
+    label { display: block; color: #00BDB8; font-weight: bold; margin-bottom: 8px; font-size: 12px; text-transform: uppercase; }
+
+    select { 
+      width: 100%; padding: 14px; background: #1a1d23; border: 1px solid #2d323a; 
+      color: white; border-radius: 8px; font-size: 16px; outline: none; appearance: none;
+    }
+    select:focus { border-color: #50e3c2; }
+    select:disabled { opacity: 0.8; color: #50e3c2; border-color: #1f232d; }
+
+    .btn-confirmar { 
+      width: 100%; padding: 18px; background: #50e3c2; color: black; border: none; 
+      border-radius: 8px; font-weight: bold; font-size: 16px; text-transform: uppercase; cursor: pointer;
+    }
+    .btn-confirmar:disabled { background: #444; color: #888; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+  <div id="areaBotaoVoltar">
+    <button class="btn-voltar-link" onclick="voltarParaDashboard()">⬅ VOLTAR PARA DASHBOARD</button>
+  </div>
+
+  <div class="header">
+    <h2>RAUTH'S BARBERSHOP</h2>
+    <small style="color: #888;">CONFIRMAÇÃO DE AGENDAMENTO</small>
+  </div>
+
+  <div class="info-topo">
+    <div id="displayInfo">⌛ Carregando detalhes do horário...</div>
+  </div>
+
+  <div class="campo">
+    <label>👤 Nome do Cliente</label>
+    <select id="selectCliente" disabled>
+      <option value="">Carregando lista...</option>
+    </select>
+  </div>
+
+  <div class="campo">
+    <label>✂️ Serviço Desejado</label>
+    <select id="selectServico">
+      <option value="">Buscando serviços...</option>
+    </select>
+  </div>
+
+  <button class="btn-confirmar" id="btnAcao" onclick="confirmar()">Finalizar Agendamento</button>
+
+  <script>
+    let usuarioAtual = {{ user|tojson }};
+    let dadosCache = {{ cache|tojson }};
+
+    window.onload = function() {
+      if (usuarioAtual.tipo === "BARBEIRO") {
+        document.getElementById("areaBotaoVoltar").style.display = "block";
+        carregarClientes();
+      } else {
+        popularClienteUnico(dadosCache.cliente);
+      }
+      carregarServicos();
+      document.getElementById('displayInfo').innerHTML = `
+        📅 <b>DATA:</b> ${dadosCache.data} <br>
+        ⏰ <b>HORA:</b> ${dadosCache.horario} <br>
+        💈 <b>BARBEIRO:</b> ${dadosCache.barbeiro}
+      `;
+    };
+
+    function carregarClientes() {
+      fetch('/api/clientes/nomes')
+        .then(res => res.json())
+        .then(lista => {
+          let select = document.getElementById("selectCliente");
+          let html = '<option value="">Selecione o Cliente...</option>';
+          lista.forEach(c => html += `<option value="${c}">${c}</option>`);
+          select.innerHTML = html;
+          select.disabled = false;
+        });
+    }
+
+    function popularClienteUnico(nome) {
+      const select = document.getElementById("selectCliente");
+      select.innerHTML = `<option value="${nome}">${nome}</option>`;
+      select.value = nome;
+      select.disabled = true;
+    }
+
+    function carregarServicos() {
+      fetch('/api/servicos/nomes')
+        .then(res => res.json())
+        .then(lista => {
+          let select = document.getElementById("selectServico");
+          let html = '<option value="">Selecione o serviço...</option>';
+          lista.forEach(s => html += `<option value="${s.nome}">${s.nome} - R$ ${s.preco}</option>`);
+          select.innerHTML = html;
+        });
+    }
+
+    function confirmar() {
+      const btn = document.getElementById("btnAcao");
+      const cliente = document.getElementById("selectCliente").value;
+      const servico = document.getElementById("selectServico").value;
+
+      if (!cliente || !servico) {
+        return Swal.fire({ icon: 'warning', title: 'Atenção', text: 'Preencha todos os campos!', background: '#1a1d23', color: '#fff' });
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = "⌛ PROCESSANDO...";
+
+      fetch('/api/agenda/salvar', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          cliente: cliente,
+          servico: servico,
+          data: dadosCache.data,
+          horario: dadosCache.horario,
+          barbeiro: dadosCache.barbeiro,
+          isAdm: (usuarioAtual.tipo === "BARBEIRO")
+        })
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.sucesso) {
+          Swal.fire({
+            icon: 'success', 
+            title: 'CONCLUÍDO!',
+            text: 'Agendamento registrado com sucesso.',
+            background: '#1a1d23', color: '#fff'
+          }).then(() => {
+            if (usuarioAtual.tipo === "BARBEIRO") {
+              window.location.href = '/dashboard';
+            } else {
+              if (res.linkWhatsapp) window.open(res.linkWhatsapp, '_blank');
+              window.location.href = '/painel_diario';
+            }
+          });
+        } else {
+          Swal.fire({ icon: 'error', title: 'Erro', text: res.msg });
+          btn.disabled = false;
+          btn.innerHTML = "Finalizar Agendamento";
+        }
+      });
+    }
+
+    function voltarParaDashboard() {
+      window.location.href = '/dashboard';
+    }
+  </script>
+</body>
+</html>

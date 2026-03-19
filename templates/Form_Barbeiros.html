@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <base target="_top">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0e14; --card: #151921; --neon: #00f2ea; --gold: #ffcc00;
+      --border: #222733; --label-color: #00BDB8;
+    }
+    body { background: var(--bg); color: white; font-family: 'Montserrat', sans-serif; padding: 15px; margin: 0; box-sizing: border-box; }
+    h2 { text-align: center; color: var(--neon); font-size: 18px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; }
+    
+    .btn-voltar-img {
+      width: 150px;
+      height: 35px;
+      padding: 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      margin-bottom: 20px;
+      display: block;
+      outline: none;
+    }
+    .btn-voltar-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+    }
+
+    .select-container { 
+      background: var(--card); padding: 12px; border-radius: 8px; 
+      border: 1px solid var(--neon); margin-bottom: 20px; 
+    }
+    .select-container label { 
+      font-size: 9px; color: var(--neon); font-weight: bold; margin-bottom: 5px; display: block; 
+    }
+
+    .form-group { 
+      background: var(--card); padding: 15px; border-radius: 12px; 
+      border: 1px solid var(--border); margin-bottom: 15px; 
+    }
+    .section-title { 
+      font-size: 11px; color: var(--gold); margin-bottom: 12px; 
+      border-bottom: 1px solid var(--border); padding-bottom: 5px; text-transform: uppercase; 
+    }
+    
+    label { 
+      display: block; margin-top: 10px; color: var(--label-color); 
+      font-size: 10px; font-weight: bold; text-transform: uppercase; 
+    }
+    input, select { 
+      width: 100%; padding: 12px; margin-top: 5px; background: #000; 
+      border: 1px solid var(--border); color: white; border-radius: 8px; 
+      box-sizing: border-box; font-size: 15px; outline: none; 
+    }
+    input:focus, select:focus { border-color: var(--neon); }
+    
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    #previewFoto { 
+      width: 85px; height: 85px; border-radius: 50%; border: 2px solid var(--neon); 
+      margin-bottom: 10px; object-fit: cover; display: none; 
+    }
+    .btn-main { 
+      width: 100%; padding: 16px; background: var(--neon); color: #000; 
+      border: none; font-weight: bold; border-radius: 8px; 
+      text-transform: uppercase; cursor: pointer; margin-top: 10px; 
+    }
+    #msgStatus { 
+      text-align: center; font-size: 12px; margin: 10px 0; 
+      font-weight: bold; min-height: 18px; color: var(--neon); 
+    }
+  </style>
+</head>
+<body>
+
+  <button class="btn-voltar-img" onclick="voltarDashboard()">
+    <img src="https://lh3.googleusercontent.com/u/0/d/1V1WBS99sZAVN_6oBqmD1xa8MtOxBd73l" alt="VOLTAR">
+  </button>
+
+  <h2>💈 GESTÃO DE BARBEIROS</h2>
+
+  <div class="select-container">
+    <label>SELECIONE PARA EDITAR OU CRIAR NOVO</label>
+    <select id="listaBarbeiros" onchange="puxarDados(this.value)">
+      <option value="NOVO">➕ CADASTRAR NOVO PROFISSIONAL</option>
+    </select>
+  </div>
+
+  <form id="formBarbeiro">
+    <input type="hidden" id="linhaRef">
+
+    <div class="form-group">
+      <div class="section-title">FOTO DO PERFIL</div>
+      <center>
+        <img id="previewFoto" src="" alt="Foto">
+        <label for="fileInput" style="border: 1px dashed var(--neon); padding: 10px; border-radius: 8px; color: var(--neon); cursor: pointer; display: block; font-size: 10px;">
+          📸 CARREGAR NOVA FOTO
+        </label>
+        <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="previewImage(this)">
+        <input type="hidden" id="base64Foto">
+      </center>
+    </div>
+
+    <div class="form-group">
+      <div class="section-title">DADOS E METAS</div>
+      <label>NOME DO PROFISSIONAL (A)</label>
+      <input type="text" id="nomeBar">
+      
+      <div class="grid-2">
+        <div>
+          <label>WHATSAPP (B)</label>
+          <input type="tel" id="whatsBar">
+        </div>
+        <div>
+          <label>COMISSÃO % (C)</label>
+          <input type="number" id="comissaoBar" step="0.1">
+        </div>
+      </div>
+      <label>META DIÁRIA R$ (F)</label>
+      <input type="text" id="metaBar" placeholder="0,00" oninput="mascaraMoeda(this)">
+    </div>
+
+    <div class="form-group">
+      <div class="section-title">ESCALA DE TRABALHO</div>
+      <div class="grid-2">
+        <div>
+          <label>INÍCIO SEMANA (G)</label>
+          <select id="inicioBar">
+            <option value="Segunda">Segunda</option>
+            <option value="Terça">Terça</option>
+            <option value="Quarta">Quarta</option>
+            <option value="Quinta">Quinta</option>
+            <option value="Sexta">Sexta</option>
+            <option value="Sábado">Sábado</option>
+          </select>
+        </div>
+        <div>
+          <label>FIM SEMANA (H)</label>
+          <select id="fimBar">
+            <option value="Sexta">Sexta</option>
+            <option value="Sábado">Sábado</option>
+            <option value="Domingo">Domingo</option>
+          </select>
+        </div>
+      </div>
+      <label>FOLGA SEMANAL (I)</label>
+      <select id="folgaBar">
+        <option value="Segunda">Segunda</option>
+        <option value="Domingo">Domingo</option>
+        <option value="Sábado">Sábado</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <div class="section-title">STATUS E ACESSO</div>
+      <div class="grid-2">
+        <div>
+          <label>NÍVEL (E)</label>
+          <select id="nivelBar">
+            <option value="USER">USER</option>
+            <option value="ADM">ADM</option>
+          </select>
+        </div>
+        <div>
+          <label>SITUAÇÃO (L)</label>
+          <select id="statusSistema">
+            <option value="ATIVO">✅ ATIVO</option>
+            <option value="INATIVO">🚫 INATIVO</option>
+          </select>
+        </div>
+      </div>
+      <label>SENHA DE ACESSO (D)</label>
+      <input type="text" id="senhaBar">
+    </div>
+
+    <div id="msgStatus"></div>
+    <button type="button" id="btnSalvar" class="btn-main" onclick="salvar()">GRAVAR DADOS</button>
+  </form>
+
+  <script>
+    function mascaraMoeda(i) {
+      let v = i.value.replace(/\D/g,'');
+      if(v === "") v = "0";
+      v = (v/100).toFixed(2) + '';
+      v = v.replace(".", ",");
+      i.value = v;
+    }
+
+    function voltarDashboard() {
+      window.location.href = '/dashboard';
+    }
+
+    function carregarLista() {
+      fetch('/api/barbeiros/listar')
+        .then(res => res.json())
+        .then(lista => {
+          const select = document.getElementById('listaBarbeiros');
+          select.innerHTML = '<option value="NOVO">➕ CADASTRAR NOVO PROFISSIONAL</option>';
+          
+          lista.forEach(nome => {
+            let opt = document.createElement('option');
+            opt.value = nome;
+            opt.text = nome;
+            select.add(opt);
+          });
+          document.getElementById('msgStatus').innerText = "✅ Lista Sincronizada";
+        });
+    }
+
+    function previewImage(input) {
+      if (input.files && input.files[0]) {
+        document.getElementById('msgStatus').innerText = "⏳ Processando imagem...";
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          var imgOriginal = new Image();
+          imgOriginal.src = e.target.result;
+          
+          imgOriginal.onload = function() {
+            var canvas = document.createElement('canvas');
+            var ctx = canvas.getContext('2d');
+            
+            canvas.width = 300;
+            canvas.height = 300;
+            
+            var ratio = Math.max(canvas.width / imgOriginal.width, canvas.height / imgOriginal.height);
+            var x = (canvas.width - imgOriginal.width * ratio) / 2;
+            var y = (canvas.height - imgOriginal.height * ratio) / 2;
+            
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(imgOriginal, x, y, imgOriginal.width * ratio, imgOriginal.height * ratio);
+            
+            var dataUrlLeve = canvas.toDataURL('image/jpeg', 0.7);
+            
+            const imgPreview = document.getElementById('previewFoto');
+            imgPreview.src = dataUrlLeve;
+            imgPreview.style.display = 'block';
+            document.getElementById('base64Foto').value = dataUrlLeve;
+            document.getElementById('msgStatus').innerText = "📸 Foto pronta!";
+          };
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function puxarDados(nome) {
+      if (nome === "NOVO") {
+        document.getElementById('formBarbeiro').reset();
+        document.getElementById('linhaRef').value = "";
+        document.getElementById('previewFoto').style.display = "none";
+        document.getElementById('base64Foto').value = "";
+        document.getElementById('btnSalvar').innerText = "GRAVAR DADOS";
+        return;
+      }
+      
+      document.getElementById('msgStatus').innerText = "⏳ Carregando " + nome + "...";
+      
+      fetch('/api/barbeiros/buscar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: nome })
+      })
+      .then(res => res.json())
+      .then(b => {
+        if (b) {
+          document.getElementById('linhaRef').value = b.linha;
+          document.getElementById('nomeBar').value = b.nome;
+          document.getElementById('whatsBar').value = b.whats || "";
+          document.getElementById('comissaoBar').value = b.comissao || "";
+          document.getElementById('senhaBar').value = b.senha || "";
+          document.getElementById('nivelBar').value = b.nivel || "USER";
+          document.getElementById('metaBar').value = b.meta || "";
+          document.getElementById('statusSistema').value = b.status || "ATIVO";
+          document.getElementById('inicioBar').value = b.inicio || "Segunda";
+          document.getElementById('fimBar').value = b.fim || "Sexta";
+          document.getElementById('folgaBar').value = b.folga || "Domingo";
+          
+          if (b.foto && b.foto !== "") {
+            document.getElementById('previewFoto').src = b.foto;
+            document.getElementById('previewFoto').style.display = 'block';
+            document.getElementById('base64Foto').value = b.foto;
+          } else {
+            document.getElementById('previewFoto').style.display = 'none';
+            document.getElementById('base64Foto').value = "";
+          }
+          document.getElementById('btnSalvar').innerText = "ATUALIZAR " + b.nome;
+          document.getElementById('msgStatus').innerText = "✅ Dados carregados!";
+        }
+      });
+    }
+
+    function salvar() {
+      const btn = document.getElementById('btnSalvar');
+      if(!document.getElementById('nomeBar').value) {
+          alert("O nome é obrigatório!");
+          return;
+      }
+      
+      btn.disabled = true;
+      document.getElementById('msgStatus').innerText = "⏳ Gravando na Planilha...";
+
+      const dados = {
+        linhaRef: document.getElementById('linhaRef').value,
+        nome: document.getElementById('nomeBar').value,
+        whats: document.getElementById('whatsBar').value,
+        comissao: document.getElementById('comissaoBar').value,
+        senha: document.getElementById('senhaBar').value,
+        nivel: document.getElementById('nivelBar').value,
+        meta: document.getElementById('metaBar').value.replace(',', '.'),
+        status: document.getElementById('statusSistema').value,
+        foto: document.getElementById('base64Foto').value,
+        inicio: document.getElementById('inicioBar').value,
+        fim: document.getElementById('fimBar').value,
+        folga: document.getElementById('folgaBar').value
+      };
+
+      fetch('/api/barbeiros/salvar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.status === "ok") {
+          document.getElementById('msgStatus').innerText = "✅ SALVO COM SUCESSO!";
+          setTimeout(voltarDashboard, 1200);
+        } else {
+          alert("Erro: " + res.status);
+          btn.disabled = false;
+          document.getElementById('msgStatus').innerText = "❌ Falha ao gravar.";
+        }
+      })
+      .catch(err => {
+        alert("Erro de conexão");
+        btn.disabled = false;
+        document.getElementById('msgStatus').innerText = "❌ Falha ao gravar.";
+      });
+    }
+
+    window.onload = carregarLista;
+  </script>
+</body>
+</html>

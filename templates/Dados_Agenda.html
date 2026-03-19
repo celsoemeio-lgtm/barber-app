@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <base target="_top">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body { background-color: #080a0f; color: white; font-family: 'Montserrat', sans-serif; padding: 10px; margin: 0; }
+    
+    #areaBotaoVoltar {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 15px 0;
+    }
+
+    .btn-voltar-img {
+      width: 150px;
+      height: 35px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      outline: none;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .btn-voltar-img img { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: fill; 
+    }
+
+    .header { 
+      text-align: center; margin-bottom: 20px; 
+      background: #11141b; padding: 15px; 
+      border-radius: 4px; border: 1px solid #1f232d; 
+    }
+    
+    .btn-refresh { 
+      background: #50e3c2; color: #000; border: none; 
+      padding: 10px 20px; border-radius: 4px; font-weight: bold; 
+      cursor: pointer; text-transform: uppercase; 
+    }
+    
+    .table-wrapper { width: 100%; overflow-x: auto; }
+    table { 
+      width: 100%; border-collapse: collapse; 
+      background: #11141b; font-size: 11px; 
+    }
+    th, td { 
+      border: 1px solid #1f232d; padding: 12px 8px; text-align: left; 
+    }
+    th { 
+      background-color: #080a0f; color: #00BDB8; 
+      text-transform: uppercase; font-size: 10px; 
+    }
+    
+    tr.linha-agenda:hover { 
+      background-color: rgba(211, 47, 47, 0.2) !important; 
+      cursor: pointer; color: #ff4d4d; 
+    }
+    tr:nth-child(even) { background-color: #161a22; }
+    
+    .status { 
+      text-align: center; padding: 20px; 
+      color: #50e3c2; font-weight: bold; font-size: 14px; 
+    }
+  </style>
+</head>
+<body>
+
+  <div id="areaBotaoVoltar">
+    <button class="btn-voltar-img" onclick="voltar()">
+      <img src="https://lh3.googleusercontent.com/u/0/d/1V1WBS99sZAVN_6oBqmD1xa8MtOxBd73l" alt="VOLTAR">
+    </button>
+  </div>
+
+  <div class="header">
+    <h2 style="color: #50e3c2; margin-top: 0; font-size: 18px;">📋 DADOS DA AGENDA</h2>
+    <button class="btn-refresh" onclick="carregar()">🔄 ATUALIZAR LISTA</button>
+  </div>
+
+  <div id="status" class="status">Iniciando...</div>
+
+  <div class="table-wrapper">
+    <table id="tabelaDados" style="display:none;">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Hora</th>
+          <th>Cliente</th>
+          <th>Barbeiro</th>
+          <th>Serviço</th>
+        </tr>
+      </thead>
+      <tbody id="corpoTabela"></tbody>
+    </table>
+  </div>
+
+  <script>
+    window.onload = carregar;
+
+    function carregar() {
+      const status = document.getElementById("status");
+      status.style.display = "block";
+      status.innerHTML = "⏳ Lendo agenda...";
+      document.getElementById("tabelaDados").style.display = "none";
+
+      fetch('/api/agenda/listar')
+        .then(res => res.json())
+        .then(res => {
+          if (res.sucesso) {
+            status.style.display = "none";
+            document.getElementById("tabelaDados").style.display = "table";
+            let html = "";
+            res.lista.forEach(item => {
+              html += `<tr class="linha-agenda" onclick="confirmarExclusao('${item.data}', '${item.hora}', '${item.cliente}')">
+                <td>${item.data}</td>
+                <td><b>${item.hora}</b></td>
+                <td>${item.cliente}</td>
+                <td>${item.barbeiro}</td>
+                <td>${item.servico}</td>
+              </tr>`;
+            });
+            document.getElementById("corpoTabela").innerHTML = html || "<tr><td colspan='5' style='text-align:center'>Nenhum agendamento encontrado.</td></tr>";
+          } else {
+            status.innerHTML = "❌ Erro ao carregar: " + (res.msg || "Desconhecido");
+          }
+        })
+        .catch(err => {
+          status.innerHTML = "❌ Erro de conexão";
+        });
+    }
+
+    function confirmarExclusao(data, hora, cliente) {
+      Swal.fire({
+        title: 'Excluir registro?',
+        html: `Deseja remover <b>${cliente}</b><br>do dia ${data} às ${hora}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#444',
+        confirmButtonText: 'Sim, apagar!',
+        cancelButtonText: 'Cancelar',
+        background: '#1a1d23', color: '#fff'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({ 
+            title: 'Apagando...', 
+            didOpen: () => { Swal.showLoading(); },
+            background: '#1a1d23', color: '#fff'
+          });
+          
+          fetch('/api/agenda/excluir', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: data, hora: hora, cliente: cliente })
+          })
+          .then(res => res.json())
+          .then(res => {
+            if (res.sucesso) {
+              Swal.fire({ 
+                title: 'Removido!', 
+                icon: 'success', 
+                timer: 1000, 
+                showConfirmButton: false,
+                background: '#1a1d23', color: '#fff'
+              });
+              carregar();
+            } else {
+              Swal.fire({
+                title: 'Erro',
+                text: res.msg || 'Não foi possível excluir',
+                icon: 'error',
+                background: '#1a1d23', color: '#fff'
+              });
+            }
+          })
+          .catch(err => {
+            Swal.fire({
+              title: 'Erro',
+              text: 'Erro de conexão',
+              icon: 'error',
+              background: '#1a1d23', color: '#fff'
+            });
+          });
+        }
+      });
+    }
+
+    function voltar() {
+      window.location.href = '/painel_diario';
+    }
+  </script>
+</body>
+</html>

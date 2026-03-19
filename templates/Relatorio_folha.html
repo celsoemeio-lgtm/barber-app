@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    body { background: #080a0f; color: #fff; font-family: 'Montserrat', sans-serif; padding: 10px; margin: 0; }
+    .container { max-width: 100%; margin: 0 auto; }
+    
+    .header-top {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #00ffff;
+      padding-bottom: 10px;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 10px; flex: 1; }
+
+    .btn-voltar-img {
+      width: 150px;
+      height: 35px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      outline: none;
+      padding: 0;
+      flex-shrink: 0;
+    }
+    .btn-voltar-img img { width: 100%; height: 100%; object-fit: fill; }
+
+    .header-title {
+      color: #00ffff;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: bold;
+      margin: 0;
+      text-align: center;
+      flex: 1;
+    }
+
+    .header-right { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; }
+
+    .btn-header {
+      background: #1a1d23;
+      color: #fff;
+      border: 1px solid #00ffff;
+      padding: 8px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: bold;
+      white-space: nowrap;
+      transition: all 0.3s ease;
+    }
+
+    .btn-header:hover { background: #00ffff; color: #000; }
+    .btn-header.primary { background: #00ffff; color: #000; border: 1px solid #00ffff; }
+
+    #infoDoc { 
+      background: #11141b; padding: 15px; border-radius: 8px; 
+      margin-bottom: 15px; display: none; border-left: 4px solid #00ffff; 
+    }
+    .perfil-container { display: flex; align-items: center; gap: 15px; }
+    #fotoBarbeiro { 
+      width: 60px; height: 60px; border-radius: 50%; border: 2px solid #00ffff; 
+      object-fit: cover; background: #080a0f; 
+    }
+    #nomeBarbeiroDoc { font-size: 18px; font-weight: bold; text-transform: uppercase; margin: 0; }
+    #periodoDoc { font-size: 12px; color: #00ffff; margin: 4px 0 0 0; }
+
+    .secao-filtros { 
+      background: #11141b; border: 1px solid #1f232d; 
+      padding: 15px; border-radius: 8px; margin-bottom: 15px; 
+    }
+    .grid-filtros { display: flex; flex-direction: column; gap: 12px; }
+    .campo-grupo { display: flex; gap: 10px; }
+    .campo { display: flex; flex-direction: column; flex: 1; }
+    label { 
+      font-size: 10px; color: #00ffff; font-weight: bold; 
+      margin-bottom: 4px; text-transform: uppercase; 
+    }
+    input, select { 
+      background: #080a0f; border: 1px solid #2d323a; color: #fff; 
+      padding: 10px; border-radius: 6px; font-size: 14px; outline: none; 
+      box-sizing: border-box; 
+    }
+    
+    .grid-resumo { 
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; 
+      display: none; margin-bottom: 15px; 
+    }
+    .card { 
+      background: #11141b; border: 1px solid #1f232d; padding: 12px; 
+      border-radius: 8px; text-align: center; 
+    }
+    .card h3 { font-size: 9px; color: #888; margin: 0; text-transform: uppercase; }
+    .card p { font-size: 16px; font-weight: bold; margin: 5px 0; color: #fff; }
+    .sub-info { font-size: 9px; color: #00ffff; display: block; }
+
+    .area-tabela { display: none; margin-top: 10px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th { 
+      background: #080a0f; color: #00ffff; text-align: left; 
+      padding: 10px; font-size: 9px; border-bottom: 2px solid #00ffff; 
+    }
+    td { padding: 10px; border-bottom: 1px solid #1c212a; color: #ccc; }
+    .txt-vip { color: #00ffff; font-weight: bold; }
+
+    @media (max-width: 600px) {
+      .header-top { flex-wrap: wrap; gap: 10px; }
+      .btn-voltar-img { width: 100px; height: 28px; }
+      .grid-resumo { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header-top">
+    <div class="header-left">
+      <button class="btn-voltar-img" onclick="voltarDash()">
+        <img src="https://lh3.googleusercontent.com/u/0/d/1V1WBS99sZAVN_6oBqmD1xa8MtOxBd73l" alt="VOLTAR">
+      </button>
+    </div>
+    <span class="header-title">📊 FECHAMENTO</span>
+    <div class="header-right">
+      <button class="btn-header primary" onclick="executarCalculo()">GERAR RELATÓRIO</button>
+      <button class="btn-header" onclick="window.print()">GERAR PDF</button>
+    </div>
+  </div>
+
+  <div id="infoDoc">
+    <div class="perfil-container">
+      <img id="fotoBarbeiro" src="" alt="Foto">
+      <div>
+        <p id="nomeBarbeiroDoc"></p>
+        <p id="periodoDoc"></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="secao-filtros">
+    <div class="grid-filtros">
+      <div class="campo">
+        <label>Barbeiro</label>
+        <select id="barbeiro">
+          <option value="">Selecionar...</option>
+        </select>
+      </div>
+      <div class="campo-grupo">
+        <div class="campo"><label>Início</label><input type="date" id="dataI"></div>
+        <div class="campo"><label>Fim</label><input type="date" id="dataF"></div>
+      </div>
+      <div class="campo-grupo">
+        <div class="campo"><label>Assinatura (R$)</label><input type="number" id="vMensal" value="80"></div>
+        <div class="campo"><label>Barbearia (%)</label><input type="number" id="pBarb" value="50"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="dashboard" class="grid-resumo">
+    <div class="card"><h3>Total Realizado</h3><p id="resVendas">R$ 0,00</p><span id="resQtd" class="sub-info">0 atend.</span></div>
+    <div class="card"><h3>Meta de Ganhos</h3><p id="resMeta">R$ 0,00</p><span id="resMetaPerc" class="sub-info">0% Atingido</span></div>
+    <div class="card"><h3>Líquido (Pagar)</h3><p id="resPagar" style="color: #00ffff">R$ 0,00</p><span id="resPerc" class="sub-info">Comissão: 0%</span></div>
+    <div class="card"><h3>Bônus Assinatura</h3><p id="resVipUnit">R$ 0,00</p><span id="qtdVip" class="sub-info">0 Cortes Assinatura</span></div>
+  </div>
+
+  <div id="areaTabela" class="area-tabela">
+    <table>
+      <thead>
+        <tr>
+          <th>DATA</th>
+          <th>DESCRIÇÃO</th>
+          <th style="text-align:right">BRUTO</th>
+          <th style="text-align:right; color:#00ffff">COMISSÃO</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaCorpo"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  let barbeirosList = [];
+
+  window.onload = function() {
+    const hoje = new Date();
+    const mesPassado = new Date();
+    mesPassado.setDate(hoje.getDate() - 30);
+    
+    document.getElementById('dataF').value = hoje.toISOString().split('T')[0];
+    document.getElementById('dataI').value = mesPassado.toISOString().split('T')[0];
+    
+    carregarBarbeiros();
+  };
+
+  function carregarBarbeiros() {
+    fetch('/api/barbeiros/listar')
+      .then(res => res.json())
+      .then(lista => {
+        barbeirosList = lista;
+        const select = document.getElementById('barbeiro');
+        select.innerHTML = '<option value="">Selecionar...</option>';
+        
+        lista.forEach(nome => {
+          let opt = document.createElement('option');
+          opt.value = nome;
+          opt.text = nome;
+          select.add(opt);
+        });
+      });
+  }
+
+  function voltarDash() {
+    window.location.href = '/dashboard';
+  }
+
+  function executarCalculo() {
+    const b = document.getElementById('barbeiro').value;
+    const d1 = document.getElementById('dataI').value;
+    const d2 = document.getElementById('dataF').value;
+    const m = document.getElementById('vMensal').value;
+    const p = document.getElementById('pBarb').value;
+
+    if(!b || !d1 || !d2) {
+      alert("Preencha Barbeiro e Datas!");
+      return;
+    }
+
+    const btn = document.querySelector('.btn-header.primary');
+    btn.innerText = "PROCESSANDO...";
+    
+    fetch('/api/relatorios/fechamento', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        barbeiro: b,
+        data_inicio: d1,
+        data_fim: d2,
+        valor_assinatura: m,
+        perc_casa: p
+      })
+    })
+    .then(res => res.json())
+    .then(r => {
+      btn.innerText = "GERAR RELATÓRIO";
+
+      document.getElementById('fotoBarbeiro').src = r.foto || "";
+      document.getElementById('nomeBarbeiroDoc').innerText = b;
+      
+      const dataInicioFormat = d1.split('-').reverse().join('/');
+      const dataFimFormat = d2.split('-').reverse().join('/');
+      document.getElementById('periodoDoc').innerText = `Período: ${dataInicioFormat} até ${dataFimFormat}`;
+      
+      document.getElementById('infoDoc').style.display = "block";
+      document.getElementById('dashboard').style.display = "grid";
+      document.getElementById('areaTabela').style.display = "block";
+      
+      document.getElementById('resVendas').innerText = "R$ " + r.totalVendas.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+      document.getElementById('resMeta').innerText = "R$ " + r.metaValor.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+      document.getElementById('resMetaPerc').innerText = r.metaPercent.toFixed(1) + "% Atingido";
+      document.getElementById('resPagar').innerText = "R$ " + r.totalComissao.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+      document.getElementById('resVipUnit').innerText = "R$ " + r.valorUnitarioCesta.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+      
+      document.getElementById('resQtd').innerText = r.qtdAtendimentosReais + " atendimentos";
+      document.getElementById('resPerc').innerText = "Comissão Base: " + r.percComissaoBase + "%";
+      document.getElementById('qtdVip').innerText = r.qtdVips + " cortes VIP";
+
+      document.getElementById('resMetaPerc').style.color = r.metaPercent >= 100 ? "#00ffff" : "#ff4444";
+      
+      let html = "";
+      r.servicos.forEach(s => {
+        const servicoNome = s.detalhe.toUpperCase();
+        const mostrarVipEstilo = s.isVip && servicoNome.includes("CORTE");
+        
+        html += `<tr>
+          <td>${s.data.substring(0,5)}</td>
+          <td class="${mostrarVipEstilo ? 'txt-vip' : ''}">${s.detalhe} ${mostrarVipEstilo ? '✓' : ''}</td>
+          <td style="text-align:right">R$ ${s.valorBruto.toFixed(2).replace('.',',')}</td>
+          <td style="text-align:right; color:#00ffff; font-weight:bold">R$ ${s.comissao.toFixed(2).replace('.',',')}</td>
+        </tr>`;
+      });
+      document.getElementById('tabelaCorpo').innerHTML = html;
+    })
+    .catch(err => {
+      btn.innerText = "GERAR RELATÓRIO";
+      alert("Erro ao gerar relatório");
+    });
+  }
+</script>
+</body>
+</html>
