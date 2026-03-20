@@ -4,13 +4,14 @@ import gspread
 from google.oauth2 import service_account
 
 class GoogleSheetsService:
+    
     def __init__(self):
         self.client = None
         self.spreadsheet = None
         self.spreadsheet_id = "1xLDg039JNhTjWXDGCkRUX1HNevWTUFqgTLHol8J2bGw"
         self._connect()
     
-    def _connect(self):  # ← AGORA DENTRO DA CLASSE (com indentação)
+    def _connect(self):
         try:
             scopes = [
                 'https://www.googleapis.com/auth/spreadsheets',
@@ -53,7 +54,7 @@ class GoogleSheetsService:
             print(f"❌ Erro ao carregar credenciais: {e}")
             raise e
 
-    def get_all_values(self, sheet_name):  # ← DENTRO DA CLASSE
+    def get_all_values(self, sheet_name):
         try:
             worksheet = self.spreadsheet.worksheet(sheet_name)
             return worksheet.get_all_values()
@@ -61,10 +62,21 @@ class GoogleSheetsService:
             print(f"Erro ao buscar dados da aba {sheet_name}: {e}")
             return []
 
-    def append_row(self, sheet_name, row_data):  # ← DENTRO DA CLASSE
+    def append_row(self, sheet_name, row_data):
         try:
             worksheet = self.spreadsheet.worksheet(sheet_name)
             return worksheet.append_row(row_data)
         except Exception as e:
             print(f"Erro ao inserir linha na aba {sheet_name}: {e}")
             return False
+    
+    def get_aba(self, nome_aba):  # ← CORRIGIDO: agora dentro da classe
+        """
+        Retorna uma worksheet (aba) específica da planilha
+        """
+        try:
+            worksheet = self.spreadsheet.worksheet(nome_aba)
+            return worksheet
+        except Exception as e:
+            print(f"❌ Erro ao acessar aba '{nome_aba}': {e}")
+            return None
