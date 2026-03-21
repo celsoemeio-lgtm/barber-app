@@ -5,26 +5,174 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Dashboard Barbearia</title>
     <style>
-        body { background-color: #000; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; margin: 0; padding: 15px; font-family: 'Montserrat', sans-serif; overflow-x: hidden; width: 100%; max-width: 350px; box-sizing: border-box; }
-        .identificacao-container { border: 3px solid #00BDB8; border-radius: 12px; padding: 12px; margin-bottom: 25px; width: 100%; background: rgba(18, 20, 24, 0.9); display: flex; align-items: center; gap: 15px; box-shadow: 0 0 15px rgba(80, 227, 194, 0.3); box-sizing: border-box; }
-        .foto-perfil { width: 60px; height: 60px; border-radius: 12px; border: 2px solid #00BDB8; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .foto-perfil img { width: 100%; height: 100%; object-fit: cover; }
-        .info-user { text-align: left; }
-        .info-user span { display: block; font-size: 10px; color: #00BDB8; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; opacity: 0.8; }
-        #nome-exibido { font-size: 22px; color: #ffffff; font-weight: bold; text-transform: uppercase; }
-        .container-menu { display: flex; flex-direction: column; gap: 12px; width: 100%; }
-        .botao-imagem { background: none; border: none; padding: 0; cursor: pointer; transition: transform 0.2s; width: 100%; }
-        .botao-imagem img { width: 100%; height: auto; display: block; border-radius: 8px; }
-        .botao-imagem:hover { transform: scale(1.02); }
-        .btn-trocar { margin-top: 25px; background: transparent; border: 2px solid #00BDB8; color: #00BDB8; padding: 12px; border-radius: 30px; font-size: 14px; font-weight: bold; cursor: pointer; text-transform: uppercase; width: 100%; }
-        .admin-only { display: none; }
+        body { 
+            background-color: #000; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: flex-start; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 15px; 
+            font-family: 'Montserrat', sans-serif; 
+            overflow-x: hidden; 
+            width: 100%; 
+            max-width: 350px; 
+            box-sizing: border-box; 
+        }
+        
+        .identificacao-container { 
+            border: 3px solid #00BDB8; 
+            border-radius: 12px; 
+            padding: 12px; 
+            margin-bottom: 25px; 
+            width: 100%; 
+            background: rgba(18, 20, 24, 0.9); 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            box-shadow: 0 0 15px rgba(80, 227, 194, 0.3); 
+            box-sizing: border-box; 
+        }
+        
+        .foto-perfil { 
+            width: 60px; 
+            height: 60px; 
+            border-radius: 12px; 
+            border: 2px solid #00BDB8; 
+            background: #000; 
+            overflow: hidden; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            flex-shrink: 0; 
+        }
+        
+        .foto-perfil img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+        }
+        
+        .foto-perfil span { 
+            font-size: 32px; 
+            color: #00BDB8; 
+        }
+        
+        .info-user { 
+            text-align: left; 
+        }
+        
+        .info-user span { 
+            display: block; 
+            font-size: 10px; 
+            color: #00BDB8; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            letter-spacing: 2px; 
+            opacity: 0.8; 
+        }
+        
+        #nome-exibido { 
+            font-size: 22px; 
+            color: #ffffff; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            margin: 0; 
+        }
+        
+        .container-menu { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            width: 100%; 
+        }
+        
+        .botao-imagem { 
+            background: none; 
+            border: none; 
+            padding: 0; 
+            cursor: pointer; 
+            transition: transform 0.2s; 
+            width: 100%; 
+        }
+        
+        .botao-imagem img { 
+            width: 100%; 
+            height: auto; 
+            display: block; 
+            border-radius: 8px; 
+        }
+        
+        .botao-imagem:hover { 
+            transform: scale(1.02); 
+        }
+        
+        .btn-trocar { 
+            margin-top: 25px; 
+            background: none; 
+            border: none; 
+            padding: 0; 
+            cursor: pointer; 
+            transition: transform 0.2s; 
+            width: 100%; 
+        }
+        
+        .btn-trocar img { 
+            width: 100%; 
+            height: auto; 
+            display: block; 
+            border-radius: 8px; 
+        }
+        
+        .btn-trocar:hover { 
+            transform: scale(1.02); 
+        }
+        
+        .admin-only { 
+            display: none; 
+        }
+        
+        .loading { 
+            width: 100%; 
+            height: 100%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            color: #00BDB8;
+            font-size: 12px;
+        }
+        
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            
+            .foto-perfil {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .foto-perfil span {
+                font-size: 24px;
+            }
+            
+            #nome-exibido {
+                font-size: 16px;
+            }
+            
+            .info-user span {
+                font-size: 8px;
+            }
+        }
     </style>
 </head>
 <body>
 
     <div class="identificacao-container">
         <div class="foto-perfil" id="container-foto">
-            <span style="font-size: 24px; color: #00BDB8;">👤</span>
+            <span id="foto-placeholder">👤</span>
+            <img id="foto-usuario" src="" alt="Foto" style="display: none;">
         </div>
         <div class="info-user">
             <span id="cargo-user">{{ user.nivel if user.nivel == 'ADM' else 'BARBEIRO' }}</span>
@@ -52,17 +200,22 @@
             <img src="https://lh3.googleusercontent.com/u/0/d/1vmJGclkxRLfGwbY1-0f3YTxrUeROIGDE" alt="Profissional">
         </button>
         <button id="btn-demostrativo" onclick="navegar('Relatorio_folha')" class="botao-imagem admin-only">
-            <img src="https://lh3.googleusercontent.com/u/0/d/1pL6ZeT1kDcLBmTlAeOnsZ2hwSlrVOQL1" alt="Demostrativo">
+            <img src="https://lh3.googleusercontent.com/u/0/d/1zHrtV9ZeqK5mky3y40M88Tmw_N_AbWF8" alt="Demostrativo">
         </button>
         <button id="btn-gerencial" onclick="navegar('Form_Gerencial')" class="botao-imagem admin-only">
             <img src="https://lh3.googleusercontent.com/u/0/d/1cMbJfie1as1W4bfx6xn0QDIh-UFQw8PE" alt="Gerencial">
         </button>
-        <button onclick="logout()" class="botao-imagem">
-            <img src="https://lh3.googleusercontent.com/u/0/d/1PSCJUFvW5COJcA77m9joMtDOeom5kjiO" alt="Sair">
-        </button>
     </div>
 
+    <!-- Botão Trocar Usuário (Logout) -->
+    <button onclick="logout()" class="btn-trocar">
+        <img src="https://lh3.googleusercontent.com/u/0/d/1gcGVHXHebb4jxfZqPI-pu6_2gvw5StRi" alt="Trocar Usuário">
+    </button>
+
     <script>
+        const nomeUsuario = '{{ user.nome }}';
+        const nivelUsuario = '{{ user.nivel }}';
+        
         function navegar(pagina) {
             window.location.href = '/' + pagina.toLowerCase();
         }
@@ -71,13 +224,42 @@
             window.location.href = '/logout';
         }
         
+        // Carregar foto do barbeiro
+        function carregarFoto() {
+            const fotoPlaceholder = document.getElementById('foto-placeholder');
+            const fotoImg = document.getElementById('foto-usuario');
+            
+            fetch('/api/barbeiros/foto', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome: nomeUsuario })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.foto && data.foto !== '') {
+                    fotoImg.src = data.foto;
+                    fotoImg.style.display = 'block';
+                    fotoPlaceholder.style.display = 'none';
+                } else {
+                    fotoPlaceholder.style.display = 'flex';
+                    fotoImg.style.display = 'none';
+                }
+            })
+            .catch(err => {
+                console.error('Erro ao carregar foto:', err);
+                fotoPlaceholder.style.display = 'flex';
+                fotoImg.style.display = 'none';
+            });
+        }
+        
         // Mostrar botões de admin se o usuário for ADM
         window.onload = function() {
-            if ('{{ user.nivel }}' === 'ADM') {
+            if (nivelUsuario === 'ADM') {
                 document.querySelectorAll('.admin-only').forEach(btn => {
                     btn.style.display = 'block';
                 });
             }
+            carregarFoto();
         }
     </script>
 </body>

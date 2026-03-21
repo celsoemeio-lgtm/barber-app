@@ -23,3 +23,5 @@ class Config:
     
     # Pastas do Drive
     FOTOS_FOLDER_ID = "16uIn_8OVj0xr0sMkU8sz7D9VX2epjV6M"
+
+    
