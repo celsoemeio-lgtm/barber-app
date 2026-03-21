@@ -94,6 +94,33 @@ def login_cliente():
     
     return jsonify({'success': False, 'message': resultado.get('msg', 'Erro')})
 
+# ==================== ROTAS DO CLIENTE (LINK SEPARADO) ====================
+
+# NOVA ROTA PARA O LINK SEPARADO (página HTML)
+@app.route('/cliente', methods=['GET'])
+def cliente_login_separado():
+    return render_template('login_cliente.html')
+
+# NOVA API PARA AUTENTICAÇÃO DO CLIENTE VIA LINK SEPARADO
+@app.route('/cliente/auth', methods=['POST'])
+def cliente_auth_separado():
+    data = request.get_json()
+    resultado = auth_service.gerenciar_acesso_cliente(data)
+    
+    if resultado['status'] in ["EXISTENTE", "NOVO"]:
+        session['user'] = {
+            'nome': resultado['nome'],
+            'tipo': 'CLIENTE',
+            'celular': resultado['celular']
+        }
+        return jsonify({
+            'success': True,
+            'status': resultado['status'],
+            'redirect': '/painel_diario'
+        })
+    
+    return jsonify({'success': False, 'message': resultado.get('msg', 'Erro')})
+
 @app.route('/logout')
 def logout():
     session.clear()
