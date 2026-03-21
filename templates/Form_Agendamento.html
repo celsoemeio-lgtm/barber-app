@@ -10,7 +10,27 @@
     .header { text-align: center; margin-bottom: 20px; }
     .header h2 { color: #50e3c2; margin: 0; font-size: 18px; letter-spacing: 1px; }
     
-    #areaBotaoVoltar { display: none; margin-bottom: 15px; }
+    /* ESTILO DO BOTÃO VOLTAR 150x35 */
+    .btn-voltar-img { 
+      width: 150px; 
+      height: 35px; 
+      background: none; 
+      border: none; 
+      cursor: pointer; 
+      padding: 0; 
+      display: block;
+    }
+    .btn-voltar-img img { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: fill; 
+    }
+    
+    #areaBotaoVoltar { 
+      display: none; 
+      margin-bottom: 15px; 
+      justify-content: flex-start;
+    }
     .btn-voltar-link { background: none; border: none; color: #888; cursor: pointer; font-size: 12px; text-transform: uppercase; padding: 0; }
 
     .info-topo { 
@@ -38,8 +58,11 @@
 </head>
 <body>
 
+  <!-- ÁREA DO BOTÃO VOLTAR -->
   <div id="areaBotaoVoltar">
-    <button class="btn-voltar-link" onclick="voltarParaDashboard()">⬅ VOLTAR PARA DASHBOARD</button>
+    <button class="btn-voltar-img" onclick="voltarParaDashboard()">
+      <img src="https://lh3.googleusercontent.com/u/0/d/1V1WBS99sZAVN_6oBqmD1xa8MtOxBd73l" alt="VOLTAR">
+    </button>
   </div>
 
   <div class="header">
@@ -73,7 +96,7 @@
 
     window.onload = function() {
       if (usuarioAtual.tipo === "BARBEIRO") {
-        document.getElementById("areaBotaoVoltar").style.display = "block";
+        document.getElementById("areaBotaoVoltar").style.display = "flex";
         carregarClientes();
       } else {
         popularClienteUnico(dadosCache.cliente);
