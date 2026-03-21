@@ -5,6 +5,140 @@ class RelatoriosService:
     def __init__(self, sheets_service):
         self.sheets = sheets_service
     
+    def get_dados_relatorio_diario(self, data_filtro, barbeiro_logado):
+        """Relatório diário do barbeiro logado"""
+        print(f"\n=== RELATÓRIO DIÁRIO ===")
+        print(f"Data: {data_filtro}")
+        print(f"Barbeiro: {barbeiro_logado}")
+        
+        try:
+            # Converte a data para o formato dd/mm/yyyy
+            partes = data_filtro.split('-')
+            data_busca = f"{partes[2]}/{partes[1]}/{partes[0]}"
+            print(f"Data busca: {data_busca}")
+            
+            # 1. Buscar dados do barbeiro na aba Cad_Barbeiros
+            valores_b = self.sheets.get_all_values(Config.SHEETS['barbeiros'])
+            percentual_comissao = 0
+            meta_diaria = 0
+            url_foto = ""
+            
+            for i in range(1, len(valores_b)):
+                if len(valores_b[i]) > 0 and valores_b[i][0].upper() == barbeiro_logado.upper():
+                    # Comissão (coluna C - índice 2)
+                    try:
+                        comissao_str = valores_b[i][2].replace('%', '').replace(',', '.')
+                        percentual_comissao = float(comissao_str)
+                        print(f"✅ Comissão: {percentual_comissao}%")
+                    except:
+                        percentual_comissao = 0
+                        print(f"⚠️ Comissão não encontrada, usando 0%")
+                    
+                    # Meta diária (coluna F - índice 5)
+                    try:
+                        meta_str = valores_b[i][5].replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.')
+                        meta_diaria = float(meta_str)
+                        print(f"✅ Meta diária: R$ {meta_diaria:.2f}")
+                    except:
+                        meta_diaria = 0
+                        print(f"⚠️ Meta diária não encontrada, usando R$ 0")
+                    
+                    # Foto (coluna K - índice 10)
+                    if len(valores_b[i]) > 10:
+                        url_foto = valores_b[i][10]
+                        print(f"✅ Foto encontrada")
+                    break
+            
+            # 2. Buscar vendas na BASE_VENDAS
+            valores_v = self.sheets.get_all_values(Config.SHEETS['vendas'])
+            
+            r = {
+                'data': data_busca,
+                'usuario': barbeiro_logado,
+                'foto': url_foto,
+                'totalBruto': 0,
+                'totalDescontos': 0,
+                'faturamentoLiquido': 0,
+                'comissaoValor': 0,
+                'atendimentosTotal': 0,
+                'atendimentosVip': 0,
+                'atendimentosAvulsos': 0,
+                'ocupacao': 0,
+                'metaAtingida': 0,
+                'listaDetalhada': []
+            }
+            
+            atendimentos_unicos = set()
+            tempo_ocupado = 0
+            
+            # Processar vendas do dia e barbeiro
+            for i in range(1, len(valores_v)):
+                if len(valores_v[i]) < 5:
+                    continue
+                
+                # Verifica se é a data correta (coluna A) e barbeiro (coluna E)
+                if valores_v[i][0] == data_busca and valores_v[i][4].upper() == barbeiro_logado.upper():
+                    chave = f"{valores_v[i][0]}|{valores_v[i][1]}|{valores_v[i][2]}"
+                    
+                    # Contagem única por atendimento
+                    if chave not in atendimentos_unicos:
+                        # Verifica se é VIP (coluna G)
+                        if len(valores_v[i]) > 6 and valores_v[i][6].upper() == "VIP":
+                            r['atendimentosVip'] += 1
+                        else:
+                            r['atendimentosAvulsos'] += 1
+                        atendimentos_unicos.add(chave)
+                        tempo_ocupado += 45  # 45 min por atendimento
+                        
+                        # Desconto (coluna I)
+                        if len(valores_v[i]) > 8 and valores_v[i][8]:
+                            try:
+                                desc_limpo = valores_v[i][8].replace('R$', '').replace('.', '').replace(',', '.').strip()
+                                r['totalDescontos'] += float(desc_limpo) if desc_limpo else 0
+                            except:
+                                pass
+                    
+                    # Valor do serviço (coluna F)
+                    try:
+                        valor_limpo = valores_v[i][5].replace('R$', '').replace('.', '').replace(',', '.').strip()
+                        valor_float = float(valor_limpo) if valor_limpo else 0
+                        r['totalBruto'] += valor_float
+                        
+                        r['listaDetalhada'].append({
+                            'cliente': valores_v[i][2],
+                            'servico': valores_v[i][3],
+                            'valor': valor_float,
+                            'tipo': valores_v[i][6] if len(valores_v[i]) > 6 else "AVULSO",
+                            'servicoOriginal': valores_v[i][3]
+                        })
+                    except:
+                        pass
+            
+            # Cálculos finais
+            r['faturamentoLiquido'] = r['totalBruto'] - r['totalDescontos']
+            r['atendimentosTotal'] = r['atendimentosVip'] + r['atendimentosAvulsos']
+            r['comissaoValor'] = (r['faturamentoLiquido'] * percentual_comissao) / 100 if percentual_comissao > 0 else 0
+            r['ocupacao'] = min(round((tempo_ocupado / 480) * 100), 100) if tempo_ocupado > 0 else 0
+            
+            if meta_diaria > 0:
+                r['metaAtingida'] = min(round((r['comissaoValor'] / meta_diaria) * 100), 100)
+            
+            print(f"\n=== RESULTADO RELATÓRIO DIÁRIO ===")
+            print(f"Atendimentos: {r['atendimentosTotal']} (VIP: {r['atendimentosVip']}, Avulso: {r['atendimentosAvulsos']})")
+            print(f"Faturamento Líquido: R$ {r['faturamentoLiquido']:.2f}")
+            print(f"Comissão: R$ {r['comissaoValor']:.2f}")
+            print(f"Ocupação: {r['ocupacao']}%")
+            print(f"Meta Atingida: {r['metaAtingida']}%")
+            print(f"=================================\n")
+            
+            return r
+            
+        except Exception as e:
+            print(f"❌ Erro no relatório diário: {e}")
+            import traceback
+            traceback.print_exc()
+            return {'erro': str(e)}
+    
     def obter_fechamento_unificado(self, barbeiro, data_i, data_f, valor_assinatura, perc_casa):
         """Relatório de fechamento para ADMIN"""
         print(f"\n=== FECHAMENTO ADMIN ===")

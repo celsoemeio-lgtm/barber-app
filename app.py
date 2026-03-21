@@ -355,39 +355,81 @@ def api_vendas_finalizar():
 @app.route('/api/relatorios/diario', methods=['POST'])
 @login_required
 def api_relatorios_diario():
-    if session['user']['tipo'] != 'BARBEIRO':
-        return jsonify({'erro': 'Acesso negado'}), 403
-    dados = request.get_json()
-    resultado = relatorios_service.get_dados_relatorio_diario(
-        dados['data'], 
-        session['user']['nome']
-    )
-    return jsonify(resultado)
+    try:
+        if session['user']['tipo'] != 'BARBEIRO':
+            return jsonify({'erro': 'Acesso negado'}), 403
+        
+        dados = request.get_json()
+        if not dados or 'data' not in dados:
+            return jsonify({'erro': 'Data não fornecida'}), 400
+        
+        data = dados['data']
+        nome_barbeiro = session['user']['nome']
+        
+        # Log para debug no servidor
+        print(f"🔍 Relatório diário - Data: {data}, Barbeiro: {nome_barbeiro}")
+        
+        resultado = relatorios_service.get_dados_relatorio_diario(data, nome_barbeiro)
+        
+        return jsonify(resultado)
+    
+    except Exception as e:
+        import traceback
+        erro_detalhado = traceback.format_exc()
+        print("❌ ERRO em /api/relatorios/diario:")
+        print(erro_detalhado)
+        return jsonify({'erro': str(e), 'detalhes': erro_detalhado}), 500
 
 @app.route('/api/relatorios/fechamento', methods=['POST'])
 @login_required
-@admin_required
+# @admin_required  # REMOVIDO - Agora USER também pode acessar
 def api_relatorios_fechamento():
-    dados = request.get_json()
-    resultado = relatorios_service.obter_fechamento_unificado(
-        dados['barbeiro'],
-        dados['data_inicio'],
-        dados['data_fim'],
-        dados['valor_assinatura'],
-        dados['perc_casa']
-    )
-    return jsonify(resultado)
+    try:
+        dados = request.get_json()
+        if not dados:
+            return jsonify({'erro': 'Dados não fornecidos'}), 400
+        
+        print(f"🔍 Fechamento - Barbeiro: {dados.get('barbeiro')}, Datas: {dados.get('data_inicio')} a {dados.get('data_fim')}")
+        
+        resultado = relatorios_service.obter_fechamento_unificado(
+            dados.get('barbeiro'),
+            dados.get('data_inicio'),
+            dados.get('data_fim'),
+            dados.get('valor_assinatura', 80),
+            dados.get('perc_casa', 50)
+        )
+        
+        return jsonify(resultado)
+    
+    except Exception as e:
+        import traceback
+        erro_detalhado = traceback.format_exc()
+        print("❌ ERRO em /api/relatorios/fechamento:")
+        print(erro_detalhado)
+        return jsonify({'erro': str(e), 'detalhes': erro_detalhado}), 500
 
 @app.route('/api/relatorios/gerencial', methods=['POST'])
 @login_required
 @admin_required
 def api_relatorios_gerencial():
-    dados = request.get_json()
-    resultado = relatorios_service.get_relatorio_gerencial(
-        dados['data_inicio'],
-        dados['data_fim']
-    )
-    return jsonify(resultado)
+    try:
+        dados = request.get_json()
+        if not dados:
+            return jsonify({'erro': 'Dados não fornecidos'}), 400
+        
+        resultado = relatorios_service.get_relatorio_gerencial(
+            dados.get('data_inicio'),
+            dados.get('data_fim')
+        )
+        
+        return jsonify(resultado)
+    
+    except Exception as e:
+        import traceback
+        erro_detalhado = traceback.format_exc()
+        print("❌ ERRO em /api/relatorios/gerencial:")
+        print(erro_detalhado)
+        return jsonify({'erro': str(e), 'detalhes': erro_detalhado}), 500
 
 @app.route('/teste', methods=['GET'])
 def teste():

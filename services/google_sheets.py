@@ -70,7 +70,7 @@ class GoogleSheetsService:
             print(f"Erro ao inserir linha na aba {sheet_name}: {e}")
             return False
     
-    def get_aba(self, nome_aba):  # ← CORRIGIDO: agora dentro da classe
+    def get_aba(self, nome_aba):
         """
         Retorna uma worksheet (aba) específica da planilha
         """
@@ -80,3 +80,18 @@ class GoogleSheetsService:
         except Exception as e:
             print(f"❌ Erro ao acessar aba '{nome_aba}': {e}")
             return None
+    
+    # ==================== MÉTODO ADICIONADO ====================
+    
+    def delete_row(self, sheet_name, row_number):
+        """
+        Deleta uma linha específica de uma aba
+        """
+        try:
+            worksheet = self.spreadsheet.worksheet(sheet_name)
+            worksheet.delete_rows(row_number)
+            print(f"✅ Linha {row_number} deletada da aba {sheet_name}")
+            return True
+        except Exception as e:
+            print(f"❌ Erro ao deletar linha {row_number} da aba {sheet_name}: {e}")
+            return False
