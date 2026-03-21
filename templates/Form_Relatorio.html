@@ -173,6 +173,16 @@
       font-weight: bold; 
       color: #fff; 
     }
+
+    .error-message {
+      background: rgba(255, 68, 68, 0.2);
+      border: 1px solid #ff4444;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 20px;
+      text-align: center;
+      color: #ff8888;
+    }
   </style>
 </head>
 <body>
@@ -187,36 +197,58 @@
   <div id="conteudo">Carregando dados...</div>
 
   <script>
-    let usuarioAtual = {{ user|tojson }};
+    let usuarioAtual = null;
 
     window.onload = () => {
+      // Não redireciona automaticamente, apenas tenta carregar
       const hoje = new Date().toISOString().split('T')[0];
       document.getElementById('dataFiltro').value = hoje;
+      
+      // Tenta carregar os dados diretamente (o servidor vai usar a sessão)
       atualizar();
     };
 
     function atualizar() {
       const data = document.getElementById('dataFiltro').value;
+      console.log('🔍 Buscando dados para a data:', data);
 
       fetch('/api/relatorios/diario', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ data: data })
       })
-      .then(res => res.json())
+      .then(res => {
+        console.log('📡 Status:', res.status);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status} - ${res.statusText}`);
+        }
+        return res.json();
+      })
       .then(r => {
+        console.log('✅ Dados recebidos:', r);
         if (r.erro) {
-          document.getElementById('conteudo').innerHTML = `<p style="color:red; text-align:center">${r.erro}</p>`;
+          document.getElementById('conteudo').innerHTML = `<div class="error-message">❌ ${r.erro}</div>`;
           return;
         }
         exibir(r);
+      })
+      .catch(err => {
+        console.error('❌ Erro:', err);
+        document.getElementById('conteudo').innerHTML = `
+          <div class="error-message">
+            <strong>Erro ao carregar dados</strong><br>
+            ${err.message}<br><br>
+            <small>Verifique se você está logado. <a href="/dashboard" style="color:#00ffff;">Voltar ao Dashboard</a></small>
+          </div>
+        `;
       });
     }
 
     function exibir(r) {
       const fmt = (v) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
       
-      const vipsCorte = r.listaDetalhada.filter(item => 
+      const vipsCorte = (r.listaDetalhada || []).filter(item => 
         item.servicoOriginal && item.servicoOriginal.toUpperCase().includes("CORTE") && 
         item.tipo && item.tipo.toUpperCase().includes("VIP")
       );
@@ -230,40 +262,40 @@
           <div class="vip-stars">${estrelasHtml}</div>
           
           <div class="rating-block">
-            <span class="rating-value">${r.ocupacao}%</span>
+            <span class="rating-value">${r.ocupacao || 0}%</span>
             <span class="rating-label">OCUPAÇÃO</span>
           </div>
 
           <img src="${r.foto || 'https://via.placeholder.com/250'}" class="photo-central" onerror="this.src='https://via.placeholder.com/250'">
 
           <div class="name-banner">
-            <h2 class="user-name">${r.usuario}</h2>
+            <h2 class="user-name">${r.usuario || 'Usuário'}</h2>
           </div>
 
           <div class="stats-grid">
             <div class="stat-item">
-              <span class="stat-val">${r.atendimentosTotal}</span>
+              <span class="stat-val">${r.atendimentosTotal || 0}</span>
               <span class="stat-lbl">Atendimentos</span>
             </div>
             <div class="stat-item">
-              <span class="stat-val">${fmt(r.comissaoValor).replace("R$", "")}</span>
+              <span class="stat-val">${fmt(r.comissaoValor || 0).replace("R$", "")}</span>
               <span class="stat-lbl">Comissão</span>
             </div>
           </div>
 
           <div class="meta-container">
             <div class="bar-bg">
-              <div class="bar-fill" style="width: ${r.metaAtingida}%"></div>
+              <div class="bar-fill" style="width: ${r.metaAtingida || 0}%"></div>
             </div>
           </div>
         </div>
 
         <div class="servicos-box">
           <div class="servicos-header">⚔ SERVIÇOS DO DIA</div>
-          ${r.listaDetalhada.length > 0 ? r.listaDetalhada.map(i => `
+          ${(r.listaDetalhada || []).length > 0 ? r.listaDetalhada.map(i => `
             <div class="item-row">
-              <span class="srv-name">${i.cliente} - ${i.servico} ${i.tipo.includes('VIP') ? '⭐' : ''}</span>
-              <span class="srv-val">${fmt(i.valor)}</span>
+              <span class="srv-name">${i.cliente} - ${i.servico} ${i.tipo && i.tipo.includes('VIP') ? '⭐' : ''}</span>
+              <span class="srv-val">${fmt(i.valor || 0)}</span>
             </div>
           `).join('') : '<div style="font-size:11px; color:#666; text-align:center">Nenhum serviço registrado hoje.</div>'}
         </div>
