@@ -20,9 +20,6 @@
     .btn-voltar-img { width: 150px; height: 35px; padding: 0; background: none; border: none; cursor: pointer; flex-shrink: 0; }
     .btn-voltar-img img { width: 100%; height: 100%; object-fit: fill; }
     .txt-header { margin: 0; font-size: 18px; color: #50e3c2; font-weight: bold; text-transform: uppercase; }
-    
-    /* BOTÃO INVISÍVEL - só para uso do JavaScript */
-    #btnCorrigirInvisivel { display: none; }
   </style>
 </head>
 <body>
@@ -43,9 +40,6 @@
   <label>🛠️ ADICIONAR SERVIÇO</label>
   <select id="servico_select"><option value="">Carregando...</option></select>
   
-  <!-- BOTÃO INVISÍVEL (só para clique automático) -->
-  <button id="btnCorrigirInvisivel" onclick="corrigirSelect()"></button>
-
   <button class="btn-add" onclick="adicionarItem()">➕ ADICIONAR À COMANDA</button>
 
   <div id="carrinho" class="lista-itens">
@@ -64,64 +58,106 @@
     let itensVenda = [];
     let usuarioAtual = {{ user|tojson }};
 
-    // ===== FUNÇÃO QUE FUNCIONA (A MESMA DO BOTÃO) =====
-    function corrigirSelect() {
-      console.log("🔧 Corrigindo select automaticamente...");
+    // ===== FUNÇÃO QUE CARREGA OS SERVIÇOS =====
+    function carregarServicos() {
+      console.log("🔧 Carregando serviços da API...");
       
-      fetch('/api/servicos/listar')
-        .then(res => res.json())
-        .then(servicos => {
-          servicosDB = servicos;
-          
-          let htmlS = '<option value="">Escolha...</option>';
-          
-          servicos.forEach(s => {
+      fetch('/api/servicos/listar', {
+        credentials: 'include'
+      })
+      .then(res => {
+        console.log("📡 Status da resposta:", res.status);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(servicos => {
+        console.log("📦 Serviços recebidos (RAW):", servicos);
+        servicosDB = servicos;
+        
+        let select = document.getElementById('servico_select');
+        let htmlS = '<option value="">Escolha...</option>';
+        
+        if (servicos && servicos.length > 0) {
+          servicos.forEach((s, index) => {
             let preco = typeof s.preco === 'number' ? s.preco : parseFloat(s.preco) || 0;
             let precoFormatado = preco.toFixed(2).replace('.', ',');
             htmlS += `<option value="${s.nome}" data-preco="${preco}">${s.nome} - R$ ${precoFormatado}</option>`;
+            console.log(`   Adicionando: ${s.nome} - R$ ${precoFormatado}`);
           });
-          
-          document.getElementById('servico_select').innerHTML = htmlS;
-          console.log("✅ Select corrigido automaticamente");
-        })
-        .catch(err => console.error("Erro na correção:", err));
+        } else {
+          htmlS = '<option value="">Nenhum serviço encontrado</option>';
+          console.warn("⚠️ Nenhum serviço recebido!");
+        }
+        
+        select.innerHTML = htmlS;
+        console.log("✅ Select atualizado! Total de opções:", select.options.length);
+        
+        // Força uma atualização visual
+        select.style.display = 'none';
+        setTimeout(() => { select.style.display = ''; }, 10);
+      })
+      .catch(err => {
+        console.error("❌ Erro ao carregar serviços:", err);
+        document.getElementById('servico_select').innerHTML = '<option value="">Erro ao carregar serviços</option>';
+        document.getElementById("msg").innerHTML = "Erro ao carregar serviços: " + err.message;
+      });
+    }
+
+    // ===== FUNÇÃO QUE CARREGA BARBEIROS E CLIENTES =====
+    function carregarDadosIniciais() {
+      console.log("🚀 Carregando dados iniciais...");
+      
+      fetch('/api/vendas/dados_iniciais', {
+        credentials: 'include'
+      })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(res => {
+        if(res.erro) {
+          document.getElementById("msg").innerHTML = "Erro: " + res.erro;
+          return;
+        }
+        
+        console.log("📊 Dados iniciais recebidos:", res);
+        
+        // Barbeiros
+        let htmlB = '<option value="">Selecione...</option>';
+        if(res.barbeiros) {
+          res.barbeiros.forEach(b => {
+            let sel = (usuarioAtual.nome && b.trim().toLowerCase() === usuarioAtual.nome.trim().toLowerCase()) ? "selected" : "";
+            htmlB += `<option value="${b}" ${sel}>${b}</option>`;
+          });
+        }
+        document.getElementById("barbeiro").innerHTML = htmlB;
+
+        // Clientes
+        let htmlC = '<option value="">Selecione...</option>';
+        if(res.clientes) {
+          res.clientes.forEach(c => {
+            htmlC += `<option value="${c.nome}" data-plano="${c.plano}">${c.nome} (${c.plano})</option>`;
+          });
+        }
+        document.getElementById("cliente").innerHTML = htmlC;
+        
+        console.log("✅ Barbeiros e clientes carregados");
+      })
+      .catch(err => {
+        console.error("❌ Erro ao carregar dados iniciais:", err);
+        document.getElementById("msg").innerHTML = "Erro ao carregar dados: " + err.message;
+      });
     }
 
     // ===== CARREGAMENTO INICIAL =====
     window.addEventListener('load', function() {
-      // Primeiro carrega barbeiros e clientes
-      fetch('/api/vendas/dados_iniciais')
-        .then(res => res.json())
-        .then(res => {
-          if(res.erro) {
-            document.getElementById("msg").innerHTML = "Erro: " + res.erro;
-            return;
-          }
-          
-          // Barbeiros
-          let htmlB = '<option value="">Selecione...</option>';
-          if(res.barbeiros) {
-            res.barbeiros.forEach(b => {
-              let sel = (usuarioAtual.nome && b.trim().toLowerCase() === usuarioAtual.nome.trim().toLowerCase()) ? "selected" : "";
-              htmlB += `<option value="${b}" ${sel}>${b}</option>`;
-            });
-          }
-          document.getElementById("barbeiro").innerHTML = htmlB;
-
-          // Clientes
-          let htmlC = '<option value="">Selecione...</option>';
-          if(res.clientes) {
-            res.clientes.forEach(c => {
-              htmlC += `<option value="${c.nome}" data-plano="${c.plano}">${c.nome} (${c.plano})</option>`;
-            });
-          }
-          document.getElementById("cliente").innerHTML = htmlC;
-        });
-      
-      // AGORA: programa um clique no botão invisível depois de 500ms
-      setTimeout(function() {
-        document.getElementById('btnCorrigirInvisivel').click();
-      }, 500);
+      console.log("🚀 Página carregada, iniciando carregamento...");
+      carregarDadosIniciais();
+      carregarServicos(); // Chama diretamente
     });
 
     function adicionarItem() {
@@ -138,8 +174,11 @@
       let plano = selC.options[selC.selectedIndex].getAttribute("data-plano");
       let precoFinal = parseFloat(precoS) || 0;
       
+      console.log(`➕ Adicionando: ${nomeS} - Preço: ${precoFinal} - Plano: ${plano}`);
+      
       if (plano === "VIP" && nomeS.toUpperCase().includes("CORTE")) {
         precoFinal = 0;
+        console.log("🎯 Cliente VIP com CORTE - preço zerado");
       }
       
       itensVenda.push({ nome: nomeS, preco: precoFinal });
@@ -198,9 +237,15 @@
       fetch('/api/vendas/finalizar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(dados)
       })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
+      })
       .then(res => {
         if (res.sucesso) {
           msg.innerHTML = "✅ Sucesso!";
@@ -213,7 +258,8 @@
         }
       })
       .catch(err => {
-        msg.innerHTML = "❌ Erro de conexão!";
+        console.error("Erro:", err);
+        msg.innerHTML = "❌ Erro de conexão: " + err.message;
         btn.disabled = false;
       });
     }
