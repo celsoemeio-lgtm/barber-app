@@ -126,10 +126,14 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
+# ==================== ROTA USUÁRIO ATUAL (CORRIGIDA) ====================
 @app.route('/api/usuario_atual')
 def usuario_atual():
     if 'user' in session:
-        return jsonify(session['user'])
+        # Adiciona o campo logado explicitamente
+        user_data = session['user'].copy()
+        user_data['logado'] = True
+        return jsonify(user_data)
     return jsonify({'logado': False})
 
 # ==================== ROTAS DE PÁGINAS ====================

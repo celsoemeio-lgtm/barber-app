@@ -24,7 +24,6 @@
       margin: 0 auto;
     }
     
-    /* Cabeçalho */
     .header {
       display: flex;
       justify-content: space-between;
@@ -80,7 +79,6 @@
       color: #000;
     }
     
-    /* Card de informações */
     .info-card {
       background: #11141b;
       border-left: 4px solid #00ffff;
@@ -118,7 +116,6 @@
       margin-top: 5px;
     }
     
-    /* Filtros */
     .filtros {
       background: #11141b;
       border: 1px solid #1f232d;
@@ -193,7 +190,6 @@
       transform: none;
     }
     
-    /* Dashboard */
     .dashboard {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -231,7 +227,6 @@
       display: block;
     }
     
-    /* Tabela */
     .tabela-container {
       display: none;
       overflow-x: auto;
@@ -269,7 +264,6 @@
       color: #888;
     }
     
-    /* Responsivo */
     @media (max-width: 600px) {
       body {
         padding: 10px;
@@ -303,7 +297,6 @@
       }
     }
     
-    /* Impressão */
     @media print {
       body {
         background: #fff;
@@ -344,7 +337,6 @@
 </head>
 <body>
   <div class="container">
-    <!-- Cabeçalho -->
     <div class="header">
       <button class="btn-voltar-img" onclick="voltarDashboard()">
         <img src="https://lh3.googleusercontent.com/u/0/d/1V1WBS99sZAVN_6oBqmD1xa8MtOxBd73l" alt="VOLTAR">
@@ -353,7 +345,6 @@
       <button class="btn-pdf" onclick="window.print()">PDF</button>
     </div>
     
-    <!-- Card de informações do barbeiro -->
     <div id="infoCard" class="info-card">
       <div class="perfil">
         <img id="foto" class="foto" src="" alt="Foto">
@@ -364,7 +355,6 @@
       </div>
     </div>
     
-    <!-- Filtros -->
     <div class="filtros">
       <div class="campo">
         <label>BARBEIRO</label>
@@ -398,7 +388,6 @@
       <button class="btn-gerar" id="btnGerar" onclick="gerarRelatorio()">GERAR RELATÓRIO</button>
     </div>
     
-    <!-- Dashboard de resultados -->
     <div id="dashboard" class="dashboard">
       <div class="card">
         <h3>BRUTO</h3>
@@ -422,7 +411,6 @@
       </div>
     </div>
     
-    <!-- Tabela de serviços -->
     <div id="tabelaContainer" class="tabela-container">
       <table>
         <thead>
@@ -442,190 +430,162 @@
   </div>
   
   <script>
-    // Função para voltar ao dashboard
     function voltarDashboard() {
-        window.location.href = '/dashboard';
+      window.location.href = '/dashboard';
     }
     
-    // Verifica login e carrega dados
-wwindow.onload = function() {
-    fetch('/api/usuario_atual', {
+    window.onload = function() {
+      fetch('/api/usuario_atual', {
         credentials: 'include'
-    })
-    .then(res => {
-        console.log('📡 Status:', res.status);
-        return res.text();  // Mude para text() para ver a resposta bruta
-    })
-    .then(text => {
-        console.log('📦 Resposta BRUTA:', text);
-        try {
-            const user = JSON.parse(text);
-            console.log('✅ Usuário parseado:', user);
-            if (!user.logado) {
-                document.body.innerHTML = '<div style="color:red; padding:20px;">❌ user.logado é false. Resposta: ' + text + '</div>';
-                return;
-            }
-            
-            // Resto do código...
-            const hoje = new Date();
-            const trintaDiasAtras = new Date();
-            trintaDiasAtras.setDate(hoje.getDate() - 30);
-            
-            document.getElementById('dataFim').value = hoje.toISOString().split('T')[0];
-            document.getElementById('dataInicio').value = trintaDiasAtras.toISOString().split('T')[0];
-            
-            carregarBarbeiros();
-        } catch(e) {
-            document.body.innerHTML = '<div style="color:red; padding:20px;">❌ Erro ao parsear JSON: ' + text + '</div>';
+      })
+      .then(res => res.json())
+      .then(user => {
+        console.log('✅ Usuário:', user);
+        // Verifica se tem nome (indica que está logado)
+        if (!user.nome) {
+          document.body.innerHTML = '<div style="color:red; padding:20px;">❌ Você não está logado! <br> Faça login em /dashboard primeiro.</div>';
+          return;
         }
-    })
-    .catch(err => {
+        
+        const hoje = new Date();
+        const trintaDiasAtras = new Date();
+        trintaDiasAtras.setDate(hoje.getDate() - 30);
+        
+        document.getElementById('dataFim').value = hoje.toISOString().split('T')[0];
+        document.getElementById('dataInicio').value = trintaDiasAtras.toISOString().split('T')[0];
+        
+        carregarBarbeiros();
+      })
+      .catch(err => {
         console.error('❌ Erro:', err);
         document.body.innerHTML = '<div style="color:red; padding:20px;">❌ Erro: ' + err.message + '</div>';
-    });
-};
+      });
+    };
     
-    // Carrega a lista de barbeiros
     function carregarBarbeiros() {
-        fetch('/api/barbeiros/listar', {
-            credentials: 'include'
-        })
-        .then(res => {
-            if (!res.ok) {
-                throw new Error('Erro ao carregar barbeiros');
-            }
-            return res.json();
-        })
-        .then(lista => {
-            const select = document.getElementById('barbeiro');
-            select.innerHTML = '<option value="">Selecionar barbeiro...</option>';
-            lista.forEach(nome => {
-                const option = document.createElement('option');
-                option.value = nome;
-                option.textContent = nome;
-                select.appendChild(option);
-            });
-        })
-        .catch(err => {
-            console.error('Erro:', err);
-            document.getElementById('barbeiro').innerHTML = '<option value="">Erro ao carregar</option>';
+      fetch('/api/barbeiros/listar', {
+        credentials: 'include'
+      })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Erro ao carregar barbeiros');
+        }
+        return res.json();
+      })
+      .then(lista => {
+        const select = document.getElementById('barbeiro');
+        select.innerHTML = '<option value="">Selecionar barbeiro...</option>';
+        lista.forEach(nome => {
+          const option = document.createElement('option');
+          option.value = nome;
+          option.textContent = nome;
+          select.appendChild(option);
         });
+      })
+      .catch(err => {
+        console.error('Erro:', err);
+        document.getElementById('barbeiro').innerHTML = '<option value="">Erro ao carregar</option>';
+      });
     }
     
-    // Gera o relatório
     function gerarRelatorio() {
-        const barbeiro = document.getElementById('barbeiro').value;
-        const dataInicio = document.getElementById('dataInicio').value;
-        const dataFim = document.getElementById('dataFim').value;
-        const assinatura = document.getElementById('assinatura').value;
-        const percentualCasa = document.getElementById('percentualCasa').value;
+      const barbeiro = document.getElementById('barbeiro').value;
+      const dataInicio = document.getElementById('dataInicio').value;
+      const dataFim = document.getElementById('dataFim').value;
+      const assinatura = document.getElementById('assinatura').value;
+      const percentualCasa = document.getElementById('percentualCasa').value;
+      
+      if (!barbeiro) {
+        alert('Selecione um barbeiro!');
+        return;
+      }
+      
+      if (!dataInicio || !dataFim) {
+        alert('Selecione as datas!');
+        return;
+      }
+      
+      const btn = document.getElementById('btnGerar');
+      btn.disabled = true;
+      btn.textContent = 'PROCESSANDO...';
+      
+      document.getElementById('dashboard').style.display = 'none';
+      document.getElementById('tabelaContainer').style.display = 'none';
+      document.getElementById('infoCard').style.display = 'none';
+      
+      fetch('/api/relatorios/fechamento', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          barbeiro: barbeiro,
+          data_inicio: dataInicio,
+          data_fim: dataFim,
+          valor_assinatura: parseFloat(assinatura),
+          perc_casa: parseFloat(percentualCasa)
+        })
+      })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`Erro HTTP: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(dados => {
+        btn.disabled = false;
+        btn.textContent = 'GERAR RELATÓRIO';
         
-        // Validação
-        if (!barbeiro) {
-            alert('Selecione um barbeiro!');
-            return;
+        if (dados.erro) {
+          alert('Erro: ' + dados.erro);
+          return;
         }
         
-        if (!dataInicio || !dataFim) {
-            alert('Selecione as datas!');
-            return;
+        const dataInicioFormat = dataInicio.split('-').reverse().join('/');
+        const dataFimFormat = dataFim.split('-').reverse().join('/');
+        
+        document.getElementById('foto').src = dados.foto || 'https://via.placeholder.com/60';
+        document.getElementById('nome').textContent = barbeiro;
+        document.getElementById('periodo').textContent = `Período: ${dataInicioFormat} até ${dataFimFormat}`;
+        document.getElementById('infoCard').style.display = 'block';
+        
+        document.getElementById('bruto').textContent = `R$ ${(dados.totalVendas || 0).toFixed(2)}`;
+        document.getElementById('bonusVip').textContent = `R$ ${(dados.valorUnitarioCesta || 0).toFixed(2)}`;
+        document.getElementById('liquido').textContent = `R$ ${(dados.totalComissao || 0).toFixed(2)}`;
+        document.getElementById('qtdAtendimentos').textContent = `${dados.qtdAtendimentosReais || 0} atend.`;
+        document.getElementById('qtdVips').textContent = `${dados.qtdVips || 0} VIPs`;
+        document.getElementById('comissaoBase').textContent = `Comissão: ${dados.percComissaoBase || 0}%`;
+        document.getElementById('ocupacao').textContent = `${(dados.taxaOcupacao || 0).toFixed(1)}%`;
+        
+        document.getElementById('dashboard').style.display = 'grid';
+        
+        const tbody = document.getElementById('tabelaBody');
+        if (dados.servicos && dados.servicos.length > 0) {
+          let html = '';
+          dados.servicos.forEach(servico => {
+            const vipClass = servico.isVip ? 'vip' : '';
+            const vipMark = servico.isVip ? ' ✓' : '';
+            html += `
+              <tr>
+                <td>${servico.data}</td>
+                <td class="${vipClass}">${servico.detalhe}${vipMark}</td>
+                <td style="text-align: right">R$ ${servico.valor.toFixed(2)}</td>
+              </tr>
+            `;
+          });
+          tbody.innerHTML = html;
+        } else {
+          tbody.innerHTML = '<tr><td colspan="3" class="sem-dados">Nenhum serviço encontrado no período</td></tr>';
         }
         
-        // Desabilita botão durante o processamento
-        const btn = document.getElementById('btnGerar');
-        btn.disabled = true;
-        btn.textContent = 'PROCESSANDO...';
-        
-        // Esconde resultados anteriores
-        document.getElementById('dashboard').style.display = 'none';
-        document.getElementById('tabelaContainer').style.display = 'none';
-        document.getElementById('infoCard').style.display = 'none';
-        
-        // Faz a requisição
-        fetch('/api/relatorios/fechamento', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-                barbeiro: barbeiro,
-                data_inicio: dataInicio,
-                data_fim: dataFim,
-                valor_assinatura: parseFloat(assinatura),
-                perc_casa: parseFloat(percentualCasa)
-            })
-        })
-        .then(res => {
-            if (!res.ok) {
-                if (res.status === 403) {
-                    throw new Error('Acesso negado. Você não tem permissão.');
-                }
-                throw new Error(`Erro HTTP: ${res.status}`);
-            }
-            return res.json();
-        })
-        .then(dados => {
-            // Reativa botão
-            btn.disabled = false;
-            btn.textContent = 'GERAR RELATÓRIO';
-            
-            // Verifica erro
-            if (dados.erro) {
-                alert('Erro: ' + dados.erro);
-                return;
-            }
-            
-            // Exibe informações do barbeiro
-            const dataInicioFormat = dataInicio.split('-').reverse().join('/');
-            const dataFimFormat = dataFim.split('-').reverse().join('/');
-            
-            document.getElementById('foto').src = dados.foto || 'https://via.placeholder.com/60';
-            document.getElementById('nome').textContent = barbeiro;
-            document.getElementById('periodo').textContent = `Período: ${dataInicioFormat} até ${dataFimFormat}`;
-            document.getElementById('infoCard').style.display = 'block';
-            
-            // Exibe dashboard
-            document.getElementById('bruto').textContent = `R$ ${(dados.totalVendas || 0).toFixed(2)}`;
-            document.getElementById('bonusVip').textContent = `R$ ${(dados.valorUnitarioCesta || 0).toFixed(2)}`;
-            document.getElementById('liquido').textContent = `R$ ${(dados.totalComissao || 0).toFixed(2)}`;
-            document.getElementById('qtdAtendimentos').textContent = `${dados.qtdAtendimentosReais || 0} atend.`;
-            document.getElementById('qtdVips').textContent = `${dados.qtdVips || 0} VIPs`;
-            document.getElementById('comissaoBase').textContent = `Comissão: ${dados.percComissaoBase || 0}%`;
-            // CORREÇÃO: usa taxaOcupacao (nome correto no backend)
-            document.getElementById('ocupacao').textContent = `${(dados.taxaOcupacao || 0).toFixed(1)}%`;
-            
-            document.getElementById('dashboard').style.display = 'grid';
-            
-            // Exibe tabela
-            const tbody = document.getElementById('tabelaBody');
-            if (dados.servicos && dados.servicos.length > 0) {
-                let html = '';
-                dados.servicos.forEach(servico => {
-                    const vipClass = servico.isVip ? 'vip' : '';
-                    const vipMark = servico.isVip ? ' ✓' : '';
-                    html += `
-                        <tr>
-                            <td>${servico.data}</td>
-                            <td class="${vipClass}">${servico.detalhe}${vipMark}</td>
-                            <td style="text-align: right">R$ ${servico.valor.toFixed(2)}</td>
-                        </tr>
-                    `;
-                });
-                tbody.innerHTML = html;
-            } else {
-                tbody.innerHTML = '<tr><td colspan="3" class="sem-dados">Nenhum serviço encontrado no período</td></tr>';
-            }
-            
-            document.getElementById('tabelaContainer').style.display = 'block';
-        })
-        .catch(err => {
-            btn.disabled = false;
-            btn.textContent = 'GERAR RELATÓRIO';
-            console.error('Erro:', err);
-            alert('Erro ao gerar relatório: ' + err.message);
-        });
+        document.getElementById('tabelaContainer').style.display = 'block';
+      })
+      .catch(err => {
+        btn.disabled = false;
+        btn.textContent = 'GERAR RELATÓRIO';
+        console.error('Erro:', err);
+        alert('Erro ao gerar relatório: ' + err.message);
+      });
     }
-</script>
+  </script>
 </body>
 </html>

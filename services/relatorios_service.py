@@ -98,9 +98,9 @@ class RelatoriosService:
                             except:
                                 pass
                     
-                    # Valor do serviço (coluna F)
+                    # Valor do serviço (coluna H - TOTAL DIA)
                     try:
-                        valor_limpo = valores_v[i][5].replace('R$', '').replace('.', '').replace(',', '.').strip()
+                        valor_limpo = valores_v[i][7].replace('R$', '').replace('.', '').replace(',', '.').strip() if len(valores_v[i]) > 7 else "0"
                         valor_float = float(valor_limpo) if valor_limpo else 0
                         r['totalBruto'] += valor_float
                         
@@ -140,7 +140,7 @@ class RelatoriosService:
             return {'erro': str(e)}
     
     def obter_fechamento_unificado(self, barbeiro, data_i, data_f, valor_assinatura, perc_casa):
-        """Relatório de fechamento para ADMIN"""
+        """Relatório de fechamento para ADMIN com rateio VIP corrigido"""
         print(f"\n=== FECHAMENTO ADMIN ===")
         print(f"Barbeiro: {barbeiro}")
         print(f"Período: {data_i} até {data_f}")
@@ -153,7 +153,7 @@ class RelatoriosService:
             d_fim = datetime.strptime(data_f, "%Y-%m-%d")
             print(f"Datas convertidas: {d_ini.strftime('%d/%m/%Y')} até {d_fim.strftime('%d/%m/%Y')}")
             
-            # 1. Buscar dados do barbeiro
+            # ========== 1. DADOS DO BARBEIRO ==========
             print("Buscando dados do barbeiro...")
             valores_b = self.sheets.get_all_values(Config.SHEETS['barbeiros'])
             print(f"Total de barbeiros na planilha: {len(valores_b)-1}")
@@ -166,7 +166,7 @@ class RelatoriosService:
                 if len(valores_b[i]) > 0 and valores_b[i][0].lower().strip() == nome_busca:
                     print(f"✅ Barbeiro encontrado: {valores_b[i][0]}")
                     
-                    # Comissão (coluna 2)
+                    # Comissão (coluna C)
                     try:
                         comissao_str = valores_b[i][2].replace('%', '')
                         comissao_base = float(comissao_str)
@@ -175,7 +175,7 @@ class RelatoriosService:
                         comissao_base = 0
                         print(f"   Comissão: não encontrada, usando 0%")
                     
-                    # Meta diária (coluna 5)
+                    # Meta diária (coluna F)
                     try:
                         meta_str = valores_b[i][5].replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.')
                         meta_diaria = float(meta_str)
@@ -184,13 +184,13 @@ class RelatoriosService:
                         meta_diaria = 0
                         print(f"   Meta diária: não encontrada, usando R$ 0")
                     
-                    # Foto (coluna 10)
+                    # Foto (coluna K)
                     if len(valores_b[i]) > 10:
                         url_foto = valores_b[i][10]
                         print(f"   Foto: {url_foto[:50]}...")
                     break
             
-            # 2. Calcular dias trabalhados (CORRIGIDO COM TIMEDELTA)
+            # ========== 2. CALCULAR DIAS TRABALHADOS ==========
             print("Calculando dias no período...")
             dias_trab = 0
             temp = d_ini
@@ -202,70 +202,145 @@ class RelatoriosService:
             meta_periodo = dias_trab * meta_diaria
             print(f"   Meta do período: R$ {meta_periodo:.2f}")
             
-            # 3. Buscar vendas
+            # ========== 3. CONTAR CLIENTES VIP ATIVOS NO PERÍODO ==========
+            print("Contando clientes VIP ativos...")
+            valores_c = self.sheets.get_all_values(Config.SHEETS['clientes'])
+            total_vips_ativos = 0
+            
+            for i in range(1, len(valores_c)):
+                if len(valores_c[i]) > 2 and valores_c[i][2] == "VIP":
+                    # Verifica se o cliente foi cadastrado no período
+                    try:
+                        if len(valores_c[i]) > 3 and valores_c[i][3]:
+                            data_parts = valores_c[i][3].split('/')
+                            if len(data_parts) == 3:
+                                d_cad = datetime(int(data_parts[2]), int(data_parts[1]), int(data_parts[0]))
+                                if d_ini <= d_cad <= d_fim:
+                                    total_vips_ativos += 1
+                        else:
+                            total_vips_ativos += 1
+                    except:
+                        total_vips_ativos += 1
+            
+            print(f"✅ Clientes VIP ativos no período: {total_vips_ativos}")
+            
+            # ========== 4. CALCULAR VALOR TOTAL DO RATEIO VIP ==========
+            faturamento_vip_total = total_vips_ativos * float(valor_assinatura)
+            sobra_rateio = faturamento_vip_total * ((100 - float(perc_casa)) / 100)
+            print(f"💰 Faturamento VIP total: R$ {faturamento_vip_total:.2f}")
+            print(f"💰 Valor para rateio (após {perc_casa}% barbearia): R$ {sobra_rateio:.2f}")
+            
+            # ========== 5. BUSCAR VENDAS ==========
             print("Buscando vendas...")
             valores_v = self.sheets.get_all_values(Config.SHEETS['vendas'])
             print(f"   Total de vendas na planilha: {len(valores_v)-1}")
             
-            # 4. Processar vendas do barbeiro
-            fat_bruto = 0
-            comissao_total = 0
-            servicos_lista = []
-            vendas_encontradas = 0
+            # ========== 6. CONTAR CORTES VIP POR BARBEIRO ==========
+            print("Contando cortes VIP no período...")
+            cortes_vip_por_barbeiro = {}
+            total_cortes_vip_geral = 0
             
-            print("Processando vendas...")
             for i in range(1, len(valores_v)):
-                if len(valores_v[i]) < 5:
+                if len(valores_v[i]) < 8:
                     continue
                 
-                # Verifica se é do barbeiro (coluna 4 - PROFISSIONAL)
+                prof = valores_v[i][4].lower().strip() if len(valores_v[i]) > 4 else ""
+                servico = valores_v[i][3].upper() if len(valores_v[i]) > 3 else ""
+                is_vip = len(valores_v[i]) > 6 and valores_v[i][6].upper() == "VIP"
+                
+                # Verifica se é CORTE e VIP
+                if is_vip and servico.find("CORTE") >= 0:
+                    # Verifica data
+                    try:
+                        data_parts = valores_v[i][0].split('/')
+                        if len(data_parts) == 3:
+                            d_venda = datetime(int(data_parts[2]), int(data_parts[1]), int(data_parts[0]))
+                            if d_ini <= d_venda <= d_fim:
+                                total_cortes_vip_geral += 1
+                                if prof not in cortes_vip_por_barbeiro:
+                                    cortes_vip_por_barbeiro[prof] = 0
+                                cortes_vip_por_barbeiro[prof] += 1
+                    except:
+                        pass
+            
+            print(f"✂️ Total de cortes VIP no período: {total_cortes_vip_geral}")
+            for prof, qtd in cortes_vip_por_barbeiro.items():
+                print(f"   {prof}: {qtd} cortes VIP")
+            
+            # ========== 7. VALOR POR CORTE VIP ==========
+            valor_por_corte_vip = sobra_rateio / total_cortes_vip_geral if total_cortes_vip_geral > 0 else 0
+            print(f"💰 Valor por corte VIP: R$ {valor_por_corte_vip:.2f}")
+            
+            # ========== 8. PROCESSAR VENDAS DO BARBEIRO ==========
+            fat_bruto = 0
+            comissao_total = 0
+            bonus_vip_total = 0
+            servicos_lista = []
+            cortes_vip_contador = 0
+            
+            print("Processando vendas do barbeiro...")
+            for i in range(1, len(valores_v)):
+                if len(valores_v[i]) < 8:
+                    continue
+                
                 if len(valores_v[i]) > 4 and valores_v[i][4].lower().strip() == nome_busca:
                     try:
-                        # Converte data da venda (DD/MM/YYYY)
                         data_parts = valores_v[i][0].split('/')
                         if len(data_parts) == 3:
                             d_venda = datetime(int(data_parts[2]), int(data_parts[1]), int(data_parts[0]))
                             
                             if d_ini <= d_venda <= d_fim:
-                                vendas_encontradas += 1
+                                # Valor (coluna H - TOTAL DIA)
+                                valor_str = valores_v[i][7] if len(valores_v[i]) > 7 else "0"
+                                valor_limpo = str(valor_str).replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
+                                valor_bruto = float(valor_limpo) if valor_limpo else 0
                                 
-                                # Valor bruto (coluna 5 - V.UNIT)
-                                valor_str = valores_v[i][5].replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.')
-                                valor_bruto = float(valor_str) if valor_str else 0
-                                
-                                # Verifica se é VIP (coluna 6 - ASS)
-                                is_vip = len(valores_v[i]) > 6 and valores_v[i][6].upper() == "VIP"
-                                
-                                # Calcula comissão
-                                ganho = valor_bruto * (comissao_base / 100)
-                                
-                                fat_bruto += valor_bruto
-                                comissao_total += ganho
-                                
-                                servicos_lista.append({
-                                    'data': valores_v[i][0],
-                                    'detalhe': valores_v[i][3],
-                                    'isVip': is_vip,
-                                    'valor': valor_bruto,
-                                    'comissao': ganho
-                                })
+                                # Só conta se valor > 0
+                                if valor_bruto > 0:
+                                    is_vip = len(valores_v[i]) > 6 and valores_v[i][6].upper() == "VIP"
+                                    servico = valores_v[i][3].upper() if len(valores_v[i]) > 3 else ""
+                                    is_corte = servico.find("CORTE") >= 0
+                                    
+                                    ganho = 0
+                                    
+                                    if is_vip and is_corte:
+                                        # CORTE VIP: recebe do rateio
+                                        ganho = valor_por_corte_vip
+                                        bonus_vip_total += ganho
+                                        cortes_vip_contador += 1
+                                    else:
+                                        # Serviços avulsos: comissão normal
+                                        ganho = valor_bruto * (comissao_base / 100)
+                                        fat_bruto += valor_bruto
+                                    
+                                    comissao_total += ganho
+                                    
+                                    servicos_lista.append({
+                                        'data': valores_v[i][0],
+                                        'detalhe': valores_v[i][3],
+                                        'isVip': is_vip,
+                                        'valor': valor_bruto,
+                                        'comissao': ganho
+                                    })
                     except Exception as e:
                         print(f"   Erro na venda linha {i}: {e}")
                         continue
             
-            print(f"   Vendas encontradas no período: {vendas_encontradas}")
+            print(f"   Cortes VIP do barbeiro: {cortes_vip_contador}")
             
-            # 5. Calcular ocupação
+            # ========== 9. CALCULAR OCUPAÇÃO ==========
             tempo_total = len(servicos_lista) * 45
             tempo_disponivel = dias_trab * 480
             ocupacao = (tempo_total / tempo_disponivel * 100) if tempo_disponivel > 0 else 0
             
-            # 6. Calcular percentual da meta
+            # ========== 10. CALCULAR PERCENTUAL DA META ==========
             perc_atingido = (comissao_total / meta_periodo * 100) if meta_periodo > 0 else 0
             
             print(f"\n=== RESULTADO DO FECHAMENTO ===")
-            print(f"Faturamento Bruto: R$ {fat_bruto:.2f}")
+            print(f"Faturamento Avulso: R$ {fat_bruto:.2f}")
+            print(f"Bônus VIP (cortes): R$ {bonus_vip_total:.2f}")
             print(f"Total Comissão: R$ {comissao_total:.2f}")
+            print(f"Cortes VIP do barbeiro: {cortes_vip_contador}")
             print(f"Atendimentos: {len(servicos_lista)}")
             print(f"Ocupação: {ocupacao:.1f}%")
             print(f"Meta Atingida: {perc_atingido:.1f}%")
@@ -274,10 +349,10 @@ class RelatoriosService:
             return {
                 'foto': url_foto,
                 'totalVendas': fat_bruto,
-                'valorUnitarioCesta': 0,
+                'valorUnitarioCesta': bonus_vip_total,
                 'totalComissao': comissao_total,
                 'qtdAtendimentosReais': len(servicos_lista),
-                'qtdVips': 0,
+                'qtdVips': cortes_vip_contador,
                 'percComissaoBase': comissao_base,
                 'metaValor': meta_periodo,
                 'metaPercent': perc_atingido,
@@ -292,7 +367,7 @@ class RelatoriosService:
             return {'erro': str(e)}
     
     def get_relatorio_gerencial(self, data_ini, data_fim):
-        """Relatório gerencial com rankings"""
+        """Relatório gerencial com rankings e detalhamento por dia"""
         print(f"\n=== RELATÓRIO GERENCIAL ===")
         print(f"Período: {data_ini} até {data_fim}")
         
@@ -306,7 +381,7 @@ class RelatoriosService:
             
             for i in range(1, len(valores_v)):
                 try:
-                    if len(valores_v[i]) > 0 and valores_v[i][0]:
+                    if len(valores_v[i]) > 7 and valores_v[i][0]:
                         data_parts = valores_v[i][0].split('/')
                         if len(data_parts) == 3:
                             d_venda = datetime(int(data_parts[2]), int(data_parts[1]), int(data_parts[0]))
@@ -317,7 +392,45 @@ class RelatoriosService:
             
             print(f"Vendas no período: {len(vendas_periodo)}")
             
-            # Dias com movimento
+            # ========== DETALHAMENTO POR DIA ==========
+            dias_dict = {}
+            
+            for v in vendas_periodo:
+                try:
+                    data_str = v[0]
+                    partes = data_str.split('/')
+                    data_iso = f"{partes[2]}-{partes[1]}-{partes[0]}"
+                    
+                    # Valor da venda (coluna H - TOTAL DIA)
+                    valor_str = v[7] if len(v) > 7 else "0"
+                    valor_limpo = str(valor_str).replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
+                    valor = float(valor_limpo) if valor_limpo else 0
+                    
+                    if valor > 0:
+                        if data_iso not in dias_dict:
+                            dias_dict[data_iso] = {
+                                'data': data_iso,
+                                'faturamento': 0,
+                                'atendimentos': 0,
+                                'ocupacao': 0,
+                                'ticketMedio': 0
+                            }
+                        
+                        dias_dict[data_iso]['faturamento'] += valor
+                        dias_dict[data_iso]['atendimentos'] += 1
+                except:
+                    pass
+            
+            for dia in dias_dict.values():
+                tempo_total = dia['atendimentos'] * 45
+                dia['ocupacao'] = round(min((tempo_total / 480) * 100, 100))
+                if dia['atendimentos'] > 0:
+                    dia['ticketMedio'] = round(dia['faturamento'] / dia['atendimentos'], 2)
+            
+            dias_lista = sorted(dias_dict.values(), key=lambda x: x['data'])
+            print(f"Dias com movimento: {len(dias_lista)}")
+            
+            # Dias com movimento (para meta)
             dias_set = set()
             for v in vendas_periodo:
                 if len(v) > 0:
@@ -346,23 +459,19 @@ class RelatoriosService:
                         vendas_b.append(v)
                 
                 fat = 0
+                atend = 0
                 for v in vendas_b:
                     try:
-                        # Tenta coluna 5 primeiro (V.UNIT)
-                        if len(v) > 5 and v[5]:
-                            valor_str = v[5]
-                        # Se não, tenta coluna 7 (TOTAL DIA)
-                        elif len(v) > 7 and v[7]:
+                        if len(v) > 7 and v[7]:
                             valor_str = v[7]
-                        else:
-                            continue
-                        valor_limpo = str(valor_str).replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
-                        if valor_limpo:
-                            fat += float(valor_limpo)
+                            valor_limpo = str(valor_str).replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
+                            valor = float(valor_limpo) if valor_limpo else 0
+                            if valor > 0:
+                                fat += valor
+                                atend += 1
                     except:
                         pass
                 
-                atend = len(vendas_b)
                 total_atendimentos += atend
                 
                 meta_total = meta_diaria * dias_movimento
@@ -407,15 +516,12 @@ class RelatoriosService:
             fat_total = 0
             for v in vendas_periodo:
                 try:
-                    if len(v) > 5 and v[5]:
-                        valor_str = v[5]
-                    elif len(v) > 7 and v[7]:
+                    if len(v) > 7 and v[7]:
                         valor_str = v[7]
-                    else:
-                        continue
-                    valor_limpo = str(valor_str).replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
-                    if valor_limpo:
-                        fat_total += float(valor_limpo)
+                        valor_limpo = str(valor_str).replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
+                        valor = float(valor_limpo) if valor_limpo else 0
+                        if valor > 0:
+                            fat_total += valor
                 except:
                     pass
             
@@ -435,6 +541,7 @@ class RelatoriosService:
             print(f"Cortes VIP: {cortes_ass}")
             print(f"Cortes Avulsos: {cortes_avulsos}")
             print(f"Barbeiros processados: {len(cards)}")
+            print(f"Dias detalhados: {len(dias_lista)}")
             print(f"==========================\n")
             
             return {
@@ -446,7 +553,8 @@ class RelatoriosService:
                     'cortesAvulsos': cortes_avulsos,
                     'ticketMedio': round(fat_total / total_atendimentos, 2) if total_atendimentos > 0 else 0
                 },
-                'barbeiros': cards
+                'barbeiros': cards,
+                'dias': dias_lista
             }
         except Exception as e:
             print(f"❌ Erro no relatório gerencial: {e}")

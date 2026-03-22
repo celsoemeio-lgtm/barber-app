@@ -36,13 +36,11 @@
       min-height: 100vh;
     }
 
-    /* Container principal */
     .container {
       max-width: 100%;
       margin: 0 auto;
     }
 
-    /* Botão voltar */
     .btn-voltar-img {
       width: 140px;
       height: 32px;
@@ -70,7 +68,6 @@
       font-weight: 700;
     }
 
-    /* Filtros */
     .header-bar {
       background: var(--bg-card);
       padding: 15px;
@@ -344,6 +341,56 @@
       background: rgba(255,68,68,0.06);
     }
 
+    /* Tabela de Detalhamento por Dia */
+    .tabela-dias {
+      background: var(--bg-card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin: 20px 0;
+      overflow-x: auto;
+    }
+    
+    .tabela-dias h3 {
+      padding: 15px;
+      color: var(--primary);
+      font-size: 14px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+    }
+    
+    .dias-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    
+    .dias-table th {
+      background: var(--bg-dark);
+      color: var(--primary);
+      padding: 12px 8px;
+      text-align: center;
+      border-bottom: 2px solid var(--primary);
+      font-weight: bold;
+      font-size: 11px;
+    }
+    
+    .dias-table td {
+      padding: 10px 8px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-highlight);
+    }
+    
+    .dias-table tr:hover {
+      background: rgba(119, 224, 230, 0.05);
+    }
+    
+    .dia-faturamento {
+      color: var(--primary);
+      font-weight: bold;
+    }
+
     .loading { 
       text-align: center; 
       color: var(--primary); 
@@ -353,12 +400,6 @@
       font-weight: bold;
     }
 
-    /* Scroll suave */
-    html {
-      scroll-behavior: smooth;
-    }
-
-    /* Ajustes para telas muito pequenas */
     @media (max-width: 380px) {
       body {
         padding: 8px;
@@ -382,6 +423,11 @@
       
       .card-header {
         height: 160px;
+      }
+      
+      .dias-table th, .dias-table td {
+        padding: 8px 4px;
+        font-size: 10px;
       }
     }
   </style>
@@ -411,6 +457,25 @@
     <div id="content" style="display: none;">
       <div class="kpi-container" id="kpi-list"></div>
       
+      <!-- Tabela de Detalhamento por Dia -->
+      <div id="tabelaDias" class="tabela-dias" style="display: none;">
+        <h3>📅 DETALHAMENTO POR DIA</h3>
+        <table class="dias-table">
+          <thead>
+            <tr>
+              <th>DATA</th>
+              <th>FATURAMENTO</th>
+              <th>ATENDIMENTOS</th>
+              <th>OCUPAÇÃO</th>
+              <th>TICKET MÉDIO</th>
+            </tr>
+          </thead>
+          <tbody id="diasBody">
+            <tr><td colspan="5" style="text-align: center;">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      
       <h2>RANKING DA EQUIPE</h2>
       <div class="barber-grid" id="barber-list"></div>
     </div>
@@ -428,13 +493,18 @@
       
       document.getElementById('msgLoading').style.display = 'block';
       document.getElementById('content').style.display = 'none';
+      document.getElementById('tabelaDias').style.display = 'none';
 
       fetch('/api/relatorios/gerencial', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ data_inicio: d1, data_fim: d2 })
       })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         document.getElementById('msgLoading').style.display = 'none';
         document.getElementById('content').style.display = 'block';
@@ -444,6 +514,7 @@
           return;
         }
 
+        // KPIs
         const g = data.geral;
         document.getElementById('kpi-list').innerHTML = `
           <div class="kpi-card"><div class="kpi-title">FATURAMENTO</div><div class="kpi-value">R$ ${g.fatBruto.toFixed(2)}</div></div>
@@ -452,6 +523,27 @@
           <div class="kpi-card"><div class="kpi-title">TICKET MÉDIO</div><div class="kpi-value">R$ ${g.ticketMedio.toFixed(2)}</div></div>
         `;
 
+        // Tabela de dias
+        if (data.dias && data.dias.length > 0) {
+          let diasHTML = '';
+          data.dias.forEach(dia => {
+            diasHTML += `
+              <tr>
+                <td>${dia.data}</td>
+                <td class="dia-faturamento">R$ ${dia.faturamento.toFixed(2)}</td>
+                <td>${dia.atendimentos}</td>
+                <td>${dia.ocupacao}%</td>
+                <td>R$ ${dia.ticketMedio.toFixed(2)}</td>
+              </tr>
+            `;
+          });
+          document.getElementById('diasBody').innerHTML = diasHTML;
+          document.getElementById('tabelaDias').style.display = 'block';
+        } else {
+          document.getElementById('tabelaDias').style.display = 'none';
+        }
+
+        // Ranking dos barbeiros
         let barberHTML = '';
         data.barbeiros.forEach(b => {
           const metaStatus = b.metaAtingida ? 'meta-batida' : 'meta-pendente';
