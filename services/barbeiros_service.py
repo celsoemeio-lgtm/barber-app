@@ -1,11 +1,31 @@
 from config import Config
+import time
 
 class BarbeirosService:
     def __init__(self, sheets_service):
         self.sheets = sheets_service
+        self._cache = {}
+        self._cache_time = {}
+        self._cache_ttl = 300  # 5 minutos
+    
+    def _get_cache(self, key):
+        if key in self._cache and key in self._cache_time:
+            if time.time() - self._cache_time[key] < self._cache_ttl:
+                return self._cache[key]
+        return None
+    
+    def _set_cache(self, key, value):
+        self._cache[key] = value
+        self._cache_time[key] = time.time()
     
     def listar_nomes(self):
-        """Retorna lista de nomes dos barbeiros"""
+        """Retorna lista de nomes dos barbeiros (com cache)"""
+        cache_key = "listar_nomes"
+        cached = self._get_cache(cache_key)
+        if cached:
+            print("📦 Usando cache de barbeiros")
+            return cached
+        
         try:
             valores = self.sheets.get_all_values(Config.SHEETS['barbeiros'])
             nomes = []
@@ -14,12 +34,14 @@ class BarbeirosService:
                 if valores[i][0]:
                     nomes.append(valores[i][0])
             
-            return sorted(nomes)
+            resultado = sorted(nomes)
+            self._set_cache(cache_key, resultado)
+            return resultado
         except:
             return []
     
     def buscar_dados(self, nome):
-        """Busca dados completos de um barbeiro"""
+        """Busca dados completos de um barbeiro (sem cache, pois é pontual)"""
         try:
             valores = self.sheets.get_all_values(Config.SHEETS['barbeiros'])
             
@@ -44,7 +66,7 @@ class BarbeirosService:
             return None
     
     def salvar(self, dados):
-        """Salva ou edita um barbeiro"""
+        """Salva ou edita um barbeiro e limpa o cache"""
         try:
             aba = self.sheets.get_aba(Config.SHEETS['barbeiros'])
             
@@ -79,6 +101,9 @@ class BarbeirosService:
                         aba.update_cell(linha, col, valor)
             else:
                 aba.append_row(dados_linha)
+            
+            # Limpa cache após alteração
+            self._cache.pop("listar_nomes", None)
             
             return "ok"
         except Exception as e:

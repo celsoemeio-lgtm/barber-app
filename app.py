@@ -339,8 +339,16 @@ def api_clientes_nomes():
 @app.route('/api/servicos/listar')
 @login_required
 def api_servicos_listar():
-    servicos = get_servicos_service().listar_servicos()
-    return jsonify(servicos)
+    try:
+        print("🔍 Chamando api_servicos_listar...")
+        servicos = get_servicos_service().listar_servicos()
+        print(f"✅ Serviços retornados: {len(servicos)}")
+        return jsonify(servicos)
+    except Exception as e:
+        import traceback
+        print("❌ ERRO em /api/servicos/listar:")
+        traceback.print_exc()
+        return jsonify({'erro': str(e)}), 500
 
 @app.route('/api/servicos/nomes')
 @login_required
