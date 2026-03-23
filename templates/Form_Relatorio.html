@@ -139,49 +139,81 @@
       transition: 1s width; 
     }
 
-    .servicos-box { 
-      background: rgba(13, 17, 23, 0.9); 
-      border-radius: 8px; 
-      padding: 12px; 
-      border: 1px solid #1f2937; 
-    }
-    .servicos-header { 
-      color: var(--tots-cyan); 
-      font-size: 12px; 
-      font-weight: bold; 
-      border-bottom: 1px solid #1f2937; 
-      padding-bottom: 8px; 
-      margin-bottom: 10px; 
-      text-transform: uppercase; 
-      text-align: center; 
-    }
-    .item-row { 
-      display: flex; 
-      justify-content: space-between; 
-      padding: 7px 0; 
-      border-bottom: 1px solid rgba(255,255,255,0.03); 
-      font-size: 11px; 
-    }
-    .srv-name { 
-      color: #ccc; 
-      overflow: hidden; 
-      white-space: nowrap; 
-      text-overflow: ellipsis; 
-      max-width: 170px; 
-    }
-    .srv-val { 
-      font-weight: bold; 
-      color: #fff; 
-    }
-
-    .error-message {
-      background: rgba(255, 68, 68, 0.2);
-      border: 1px solid #ff4444;
+    /* Tabela agrupada por cliente */
+    .tabela-container {
+      width: 300px;
+      background: rgba(13, 17, 23, 0.9);
       border-radius: 8px;
-      padding: 15px;
-      margin: 20px;
-      text-align: center;
+      border: 1px solid #1f2937;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+    
+    .cliente-group {
+      border-bottom: 1px solid #1f2937;
+    }
+    
+    .cliente-group:last-child {
+      border-bottom: none;
+    }
+    
+    .cliente-header {
+      background: #1a1d23;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    
+    .cliente-nome {
+      font-weight: bold;
+      color: var(--tots-cyan);
+      font-size: 12px;
+    }
+    
+    .cliente-valores {
+      font-size: 9px;
+      color: #888;
+    }
+    
+    .cliente-valores .pago {
+      color: #50e3c2;
+    }
+    
+    .cliente-valores .desconto {
       color: #ff8888;
+    }
+    
+    .cliente-total {
+      font-weight: bold;
+      font-size: 12px;
+      color: #50e3c2;
+    }
+    
+    .servicos-lista {
+      padding: 8px 12px 12px 30px;
+      display: block;
+    }
+    
+    .servico-item {
+      padding: 4px 0;
+      font-size: 10px;
+      color: #ccc;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .servico-icon {
+      color: var(--tots-cyan);
+      font-size: 10px;
+    }
+    
+    .vip-icon {
+      color: #ffcc00;
+      margin-left: 5px;
+      font-size: 9px;
     }
   </style>
 </head>
@@ -197,20 +229,28 @@
   <div id="conteudo">Carregando dados...</div>
 
   <script>
-    let usuarioAtual = null;
+    let usuarioAtual = {{ user|tojson }};
 
     window.onload = () => {
-      // Não redireciona automaticamente, apenas tenta carregar
-      const hoje = new Date().toISOString().split('T')[0];
-      document.getElementById('dataFiltro').value = hoje;
-      
-      // Tenta carregar os dados diretamente (o servidor vai usar a sessão)
-      atualizar();
+      fetch('/api/usuario_atual', {
+        credentials: 'include'
+      })
+      .then(res => res.json())
+      .then(user => {
+        if (!user.logado) {
+          window.location.href = '/login';
+          return;
+        }
+        usuarioAtual = user;
+        
+        const hoje = new Date().toISOString().split('T')[0];
+        document.getElementById('dataFiltro').value = hoje;
+        atualizar();
+      });
     };
 
     function atualizar() {
       const data = document.getElementById('dataFiltro').value;
-      console.log('🔍 Buscando dados para a data:', data);
 
       fetch('/api/relatorios/diario', {
         method: 'POST',
@@ -219,35 +259,26 @@
         body: JSON.stringify({ data: data })
       })
       .then(res => {
-        console.log('📡 Status:', res.status);
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status} - ${res.statusText}`);
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
       .then(r => {
-        console.log('✅ Dados recebidos:', r);
         if (r.erro) {
-          document.getElementById('conteudo').innerHTML = `<div class="error-message">❌ ${r.erro}</div>`;
+          document.getElementById('conteudo').innerHTML = `<p style="color:red; text-align:center">${r.erro}</p>`;
           return;
         }
         exibir(r);
       })
       .catch(err => {
-        console.error('❌ Erro:', err);
-        document.getElementById('conteudo').innerHTML = `
-          <div class="error-message">
-            <strong>Erro ao carregar dados</strong><br>
-            ${err.message}<br><br>
-            <small>Verifique se você está logado. <a href="/dashboard" style="color:#00ffff;">Voltar ao Dashboard</a></small>
-          </div>
-        `;
+        console.error('Erro:', err);
+        document.getElementById('conteudo').innerHTML = `<p style="color:red; text-align:center">Erro: ${err.message}</p>`;
       });
     }
 
     function exibir(r) {
       const fmt = (v) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
       
+      // Estrelas VIP para cortes VIP
       const vipsCorte = (r.listaDetalhada || []).filter(item => 
         item.servicoOriginal && item.servicoOriginal.toUpperCase().includes("CORTE") && 
         item.tipo && item.tipo.toUpperCase().includes("VIP")
@@ -257,49 +288,116 @@
         <img src="https://img.icons8.com/fluency/48/star.png" class="star-vip" title="Corte VIP">
       `).join('');
 
+      // ========== AGRUPAR SERVIÇOS POR CLIENTE ==========
+      const servicos = r.listaDetalhada || [];
+      const clientesMap = {};
+      
+      servicos.forEach(servico => {
+        const cliente = servico.cliente || 'Cliente';
+        if (!clientesMap[cliente]) {
+          clientesMap[cliente] = {
+            cliente: cliente,
+            totalPago: 0,
+            totalDesconto: 0,
+            totalServicos: 0,
+            servicos: []
+          };
+        }
+        clientesMap[cliente].totalPago += servico.valor || 0;
+        clientesMap[cliente].totalServicos += 1;
+        clientesMap[cliente].servicos.push({
+          nome: servico.servico,
+          isVip: servico.tipo && servico.tipo.toUpperCase().includes("VIP")
+        });
+      });
+      
+      const clientesLista = Object.values(clientesMap).sort((a, b) => b.totalPago - a.totalPago);
+      
+      let clientesHTML = '';
+      clientesLista.forEach(cliente => {
+        // Gera a lista de serviços (todos os serviços do cliente)
+        const servicosHTML = cliente.servicos.map(s => {
+          const isCorte = s.nome.toUpperCase().includes('CORTE');
+          // Mostra ícone VIP apenas se for CORTE e VIP
+          const vipIcon = (s.isVip && isCorte) ? '<span class="vip-icon">⭐ VIP</span>' : '';
+          return `
+            <div class="servico-item">
+              <span class="servico-icon">✂️</span>
+              <span>${s.nome}${vipIcon}</span>
+            </div>
+          `;
+        }).join('');
+        
+        const descontoTexto = cliente.totalDesconto > 0 ? ` | DESCONTO: R$ ${cliente.totalDesconto.toFixed(2)}` : '';
+        
+        clientesHTML += `
+          <div class="cliente-group">
+            <div class="cliente-header" onclick="toggleCliente(this)">
+              <div>
+                <span class="cliente-nome">👤 ${cliente.cliente}</span>
+                <div class="cliente-valores">
+                  <span class="pago">PAGOU: R$ ${cliente.totalPago.toFixed(2)}</span>${descontoTexto}
+                </div>
+              </div>
+              <span class="cliente-total">${cliente.totalServicos} serviço(s)</span>
+            </div>
+            <div class="servicos-lista" style="display: block;">
+              ${servicosHTML}
+            </div>
+          </div>
+        `;
+      });
+      
+      if (clientesLista.length === 0) {
+        clientesHTML = '<div style="padding:20px; text-align:center; color:#666;">Nenhum serviço registrado hoje.</div>';
+      }
+
       document.getElementById('conteudo').innerHTML = `
         <div class="card-container">
           <div class="vip-stars">${estrelasHtml}</div>
           
           <div class="rating-block">
-            <span class="rating-value">${r.ocupacao || 0}%</span>
+            <span class="rating-value">${r.ocupacao}%</span>
             <span class="rating-label">OCUPAÇÃO</span>
           </div>
 
           <img src="${r.foto || 'https://via.placeholder.com/250'}" class="photo-central" onerror="this.src='https://via.placeholder.com/250'">
 
           <div class="name-banner">
-            <h2 class="user-name">${r.usuario || 'Usuário'}</h2>
+            <h2 class="user-name">${r.usuario}</h2>
           </div>
 
           <div class="stats-grid">
             <div class="stat-item">
-              <span class="stat-val">${r.atendimentosTotal || 0}</span>
+              <span class="stat-val">${r.atendimentosTotal}</span>
               <span class="stat-lbl">Atendimentos</span>
             </div>
             <div class="stat-item">
-              <span class="stat-val">${fmt(r.comissaoValor || 0).replace("R$", "")}</span>
+              <span class="stat-val">${fmt(r.comissaoValor).replace("R$", "")}</span>
               <span class="stat-lbl">Comissão</span>
             </div>
           </div>
 
           <div class="meta-container">
             <div class="bar-bg">
-              <div class="bar-fill" style="width: ${r.metaAtingida || 0}%"></div>
+              <div class="bar-fill" style="width: ${r.metaAtingida}%"></div>
             </div>
           </div>
         </div>
 
-        <div class="servicos-box">
-          <div class="servicos-header">⚔ SERVIÇOS DO DIA</div>
-          ${(r.listaDetalhada || []).length > 0 ? r.listaDetalhada.map(i => `
-            <div class="item-row">
-              <span class="srv-name">${i.cliente} - ${i.servico} ${i.tipo && i.tipo.includes('VIP') ? '⭐' : ''}</span>
-              <span class="srv-val">${fmt(i.valor || 0)}</span>
-            </div>
-          `).join('') : '<div style="font-size:11px; color:#666; text-align:center">Nenhum serviço registrado hoje.</div>'}
+        <div class="tabela-container">
+          ${clientesHTML}
         </div>
       `;
+    }
+    
+    function toggleCliente(element) {
+      const servicosLista = element.nextElementSibling;
+      if (servicosLista.style.display === 'none') {
+        servicosLista.style.display = 'block';
+      } else {
+        servicosLista.style.display = 'none';
+      }
     }
 
     function voltar() {

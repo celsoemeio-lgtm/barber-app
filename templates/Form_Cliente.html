@@ -27,21 +27,6 @@
     }
     .btn-voltar-img img { width: 100%; height: 100%; object-fit: fill; }
 
-    #btnSalvar { 
-      cursor: pointer; 
-      background: #00ffff; 
-      color: #000; 
-      border: none; 
-      height: 35px; 
-      padding: 0 15px; 
-      font-weight: bold; 
-      border-radius: 6px; 
-      text-transform: uppercase; 
-      font-size: 11px;
-      flex-grow: 1;
-    }
-    #btnSalvar:disabled { background: #444; color: #888; }
-
     h2 { color: #00ffff; font-size: 14px; letter-spacing: 1px; margin: 10px 0; text-transform: uppercase; }
     
     label { display: block; margin-top: 15px; color: #00BDB8; font-size: 10px; font-weight: bold; text-transform: uppercase; }
@@ -63,6 +48,55 @@
     }
 
     hr { border: 0; border-top: 1px solid #333; margin: 20px 0; }
+    
+    .botoes-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    .btn-principal { 
+      cursor: pointer; 
+      background: #00ffff; 
+      color: #000; 
+      border: none; 
+      width: 100%;
+      padding: 14px;
+      font-weight: bold; 
+      border-radius: 8px; 
+      text-transform: uppercase; 
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-principal:hover {
+      background: #00cccc;
+      transform: scale(1.02);
+    }
+    
+    .btn-principal:disabled { background: #444; color: #888; cursor: not-allowed; transform: none; }
+    
+    .btn-secundario { 
+      cursor: pointer; 
+      background: transparent; 
+      color: #00ffff; 
+      border: 2px solid #00ffff;
+      width: 100%;
+      padding: 12px;
+      font-weight: bold; 
+      border-radius: 8px; 
+      text-transform: uppercase; 
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-secundario:hover {
+      background: rgba(0, 255, 255, 0.1);
+      transform: scale(1.02);
+    }
+    
+    .btn-secundario:disabled { background: #444; color: #888; border-color: #888; cursor: not-allowed; transform: none; }
   </style>
 </head>
 <body>
@@ -71,10 +105,9 @@
     <button class="btn-voltar-img" onclick="voltar()">
       <img src="https://lh3.googleusercontent.com/u/0/d/1V1WBS99sZAVN_6oBqmD1xa8MtOxBd73l" alt="VOLTAR">
     </button>
-    <button id="btnSalvar" onclick="processar()">SALVAR ALTERAÇÕES</button>
   </div>
   
-  <h2 id="tituloPagina">CADASTRO / EDIÇÃO</h2>
+  <h2 id="tituloPagina">CADASTRO DE CLIENTES</h2>
 
   <label>BUSCAR CLIENTE EXISTENTE (OPCIONAL)</label>
   <select id="selectBusca" onchange="carregarDadosDoCliente()">
@@ -96,26 +129,33 @@
   </select>
 
   <div id="msgStatus"></div>
+  
+  <div class="botoes-container">
+    <button id="btnNovo" class="btn-principal" onclick="salvarNovo()">➕ SALVAR NOVO CLIENTE</button>
+    <button id="btnEditar" class="btn-secundario" onclick="atualizarCliente()">✏️ SALVAR ALTERAÇÕES</button>
+  </div>
 
   <script>
     let listaClientes = [];
     let idxEditando = "";
 
     window.onload = function() {
-      fetch('/api/clientes/listar')
-        .then(res => res.json())
-        .then(dados => {
-          listaClientes = dados;
-          let select = document.getElementById('selectBusca');
-          select.innerHTML = '<option value="">-- NOVO CADASTRO --</option>';
-          
-          dados.forEach((c, index) => {
-            let opt = document.createElement('option');
-            opt.value = index;
-            opt.text = c.nome;
-            select.add(opt);
-          });
+      fetch('/api/clientes/listar', {
+        credentials: 'include'
+      })
+      .then(res => res.json())
+      .then(dados => {
+        listaClientes = dados;
+        let select = document.getElementById('selectBusca');
+        select.innerHTML = '<option value="">-- NOVO CADASTRO --</option>';
+        
+        dados.forEach((c, index) => {
+          let opt = document.createElement('option');
+          opt.value = index;
+          opt.text = c.nome;
+          select.add(opt);
         });
+      });
     };
 
     function carregarDadosDoCliente() {
@@ -124,7 +164,7 @@
       
       if(idx === "") {
         limparCampos();
-        document.getElementById('tituloPagina').innerText = "CADASTRO / EDIÇÃO";
+        document.getElementById('tituloPagina').innerText = "CADASTRO DE CLIENTES";
         idxEditando = "";
         return;
       }
@@ -151,12 +191,13 @@
       i.value = v;
     }
 
-    function processar() {
+    // BOTÃO 1: SALVAR NOVO CLIENTE
+    function salvarNovo() {
       const n = document.getElementById('nomeCli').value.trim();
       const w = document.getElementById('whatsCli').value;
       const p = document.getElementById('planoCli').value;
       const status = document.getElementById('msgStatus');
-      const btn = document.getElementById('btnSalvar');
+      const btn = document.getElementById('btnNovo');
       
       if(n === "" || w.length < 14) {
         status.innerText = "⚠️ NOME E WHATS SÃO OBRIGATÓRIOS!";
@@ -164,11 +205,69 @@
       }
 
       btn.disabled = true;
-      btn.innerText = "⌛ PROCESSANDO...";
+      btn.innerText = "⌛ SALVANDO...";
 
       fetch('/api/clientes/salvar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          nome: n,
+          whats: w,
+          plano: p,
+          idx: ""  // vazio = novo cliente
+        })
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.status === "ok") {
+          status.style.color = "#00ffff";
+          status.innerText = "✅ NOVO CLIENTE CADASTRADO!";
+          limparCampos();
+          // Recarrega a lista de clientes
+          location.reload();
+        } else if (res.status === "duplicado") {
+          status.innerText = "⚠️ CLIENTE JÁ CADASTRADO COM ESTE WHATSAPP!";
+          btn.disabled = false;
+          btn.innerText = "➕ SALVAR NOVO CLIENTE";
+        } else {
+          status.innerText = "❌ ERRO: " + res.status;
+          btn.disabled = false;
+          btn.innerText = "➕ SALVAR NOVO CLIENTE";
+        }
+      })
+      .catch(err => {
+        status.innerText = "❌ ERRO DE CONEXÃO";
+        btn.disabled = false;
+        btn.innerText = "➕ SALVAR NOVO CLIENTE";
+      });
+    }
+
+    // BOTÃO 2: SALVAR ALTERAÇÕES (EDIÇÃO)
+    function atualizarCliente() {
+      const n = document.getElementById('nomeCli').value.trim();
+      const w = document.getElementById('whatsCli').value;
+      const p = document.getElementById('planoCli').value;
+      const status = document.getElementById('msgStatus');
+      const btn = document.getElementById('btnEditar');
+      
+      if(idxEditando === "") {
+        status.innerText = "⚠️ SELECIONE UM CLIENTE PARA EDITAR!";
+        return;
+      }
+      
+      if(n === "" || w.length < 14) {
+        status.innerText = "⚠️ NOME E WHATS SÃO OBRIGATÓRIOS!";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = "⌛ ATUALIZANDO...";
+
+      fetch('/api/clientes/salvar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           nome: n,
           whats: w,
@@ -180,18 +279,18 @@
       .then(res => {
         if (res.status === "ok") {
           status.style.color = "#00ffff";
-          status.innerText = "✅ SUCESSO!";
+          status.innerText = "✅ CLIENTE ATUALIZADO!";
           setTimeout(voltar, 1000);
         } else {
           status.innerText = "❌ ERRO: " + res.status;
           btn.disabled = false;
-          btn.innerText = "SALVAR ALTERAÇÕES";
+          btn.innerText = "✏️ SALVAR ALTERAÇÕES";
         }
       })
       .catch(err => {
         status.innerText = "❌ ERRO DE CONEXÃO";
         btn.disabled = false;
-        btn.innerText = "SALVAR ALTERAÇÕES";
+        btn.innerText = "✏️ SALVAR ALTERAÇÕES";
       });
     }
 

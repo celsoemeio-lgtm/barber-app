@@ -1,5 +1,6 @@
 from config import Config
 from datetime import datetime, timedelta
+import re
 
 class RelatoriosService:
     def __init__(self, sheets_service):
@@ -34,14 +35,18 @@ class RelatoriosService:
                         percentual_comissao = 0
                         print(f"⚠️ Comissão não encontrada, usando 0%")
                     
-                    # Meta diária (coluna F - índice 5)
+                    # Meta diária (coluna F - índice 5) - CORRIGIDO
                     try:
-                        meta_str = valores_b[i][5].replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.')
-                        meta_diaria = float(meta_str)
+                        meta_str = str(valores_b[i][5]).replace('R$', '').replace(' ', '').replace(',', '.').strip()
+                        meta_num = re.sub(r'[^0-9.]', '', meta_str)
+                        if meta_num.count('.') > 1:
+                            partes_meta = meta_num.split('.')
+                            meta_num = partes_meta[0] + '.' + partes_meta[1]
+                        meta_diaria = float(meta_num)
                         print(f"✅ Meta diária: R$ {meta_diaria:.2f}")
-                    except:
+                    except Exception as e:
                         meta_diaria = 0
-                        print(f"⚠️ Meta diária não encontrada, usando R$ 0")
+                        print(f"⚠️ Erro ao ler meta: {e}, usando R$ 0")
                     
                     # Foto (coluna K - índice 10)
                     if len(valores_b[i]) > 10:
@@ -175,14 +180,18 @@ class RelatoriosService:
                         comissao_base = 0
                         print(f"   Comissão: não encontrada, usando 0%")
                     
-                    # Meta diária (coluna F)
+                    # Meta diária (coluna F) - CORRIGIDO
                     try:
-                        meta_str = valores_b[i][5].replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.')
-                        meta_diaria = float(meta_str)
+                        meta_str = str(valores_b[i][5]).replace('R$', '').replace(' ', '').replace(',', '.').strip()
+                        meta_num = re.sub(r'[^0-9.]', '', meta_str)
+                        if meta_num.count('.') > 1:
+                            partes_meta = meta_num.split('.')
+                            meta_num = partes_meta[0] + '.' + partes_meta[1]
+                        meta_diaria = float(meta_num)
                         print(f"   Meta diária: R$ {meta_diaria:.2f}")
-                    except:
+                    except Exception as e:
                         meta_diaria = 0
-                        print(f"   Meta diária: não encontrada, usando R$ 0")
+                        print(f"   ⚠️ Erro ao ler meta: {e}, usando R$ 0")
                     
                     # Foto (coluna K)
                     if len(valores_b[i]) > 10:
@@ -277,6 +286,7 @@ class RelatoriosService:
             bonus_vip_total = 0
             servicos_lista = []
             cortes_vip_contador = 0
+            atendimentos_unicos = set()
             
             print("Processando vendas do barbeiro...")
             for i in range(1, len(valores_v)):
@@ -290,46 +300,70 @@ class RelatoriosService:
                             d_venda = datetime(int(data_parts[2]), int(data_parts[1]), int(data_parts[0]))
                             
                             if d_ini <= d_venda <= d_fim:
-                                # Valor (coluna H - TOTAL DIA)
+                                # Valor da coluna H (TOTAL DIA) - valor efetivamente pago
                                 valor_str = valores_v[i][7] if len(valores_v[i]) > 7 else "0"
                                 valor_limpo = str(valor_str).replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
                                 valor_bruto = float(valor_limpo) if valor_limpo else 0
                                 
-                                # Só conta se valor > 0
-                                if valor_bruto > 0:
-                                    is_vip = len(valores_v[i]) > 6 and valores_v[i][6].upper() == "VIP"
-                                    servico = valores_v[i][3].upper() if len(valores_v[i]) > 3 else ""
-                                    is_corte = servico.find("CORTE") >= 0
-                                    
-                                    ganho = 0
+                                # Valor da coluna F (V. UNIT) - valor de tabela do serviço
+                                valor_unitario_str = valores_v[i][5] if len(valores_v[i]) > 5 else "0"
+                                valor_unitario_limpo = str(valor_unitario_str).replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
+                                valor_unitario = float(valor_unitario_limpo) if valor_unitario_limpo else 0
+                                
+                                is_vip = len(valores_v[i]) > 6 and valores_v[i][6].upper() == "VIP"
+                                servico_nome = valores_v[i][3].upper() if len(valores_v[i]) > 3 else ""
+                                is_corte = servico_nome.find("CORTE") >= 0
+                                
+                                # Chave única para este atendimento (data|hora|cliente)
+                                chave = f"{valores_v[i][0]}|{valores_v[i][1]}|{valores_v[i][2]}"
+                                
+                                # SEMPRE adiciona o serviço à lista (para exibição)
+                                servicos_lista.append({
+                                    'data': valores_v[i][0],
+                                    'cliente': valores_v[i][2],
+                                    'detalhe': valores_v[i][3],
+                                    'isVip': is_vip,
+                                    'valor': valor_bruto,
+                                    'valorServico': valor_unitario,
+                                    'comissao': 0
+                                })
+                                
+                                # Cálculo de comissão (apenas uma vez por atendimento)
+                                if chave not in atendimentos_unicos:
+                                    atendimentos_unicos.add(chave)
                                     
                                     if is_vip and is_corte:
                                         # CORTE VIP: recebe do rateio
                                         ganho = valor_por_corte_vip
                                         bonus_vip_total += ganho
                                         cortes_vip_contador += 1
+                                        # Atualiza a comissão para este serviço
+                                        for item in servicos_lista:
+                                            if item['data'] == valores_v[i][0] and item['cliente'] == valores_v[i][2] and item['detalhe'] == valores_v[i][3]:
+                                                item['comissao'] = ganho
+                                                break
                                     else:
-                                        # Serviços avulsos: comissão normal
+                                        # Serviços avulsos ou VIP não-CORTE: comissão normal
                                         ganho = valor_bruto * (comissao_base / 100)
                                         fat_bruto += valor_bruto
-                                    
-                                    comissao_total += ganho
-                                    
-                                    servicos_lista.append({
-                                        'data': valores_v[i][0],
-                                        'detalhe': valores_v[i][3],
-                                        'isVip': is_vip,
-                                        'valor': valor_bruto,
-                                        'comissao': ganho
-                                    })
+                                        # Atualiza a comissão para este serviço
+                                        for item in servicos_lista:
+                                            if item['data'] == valores_v[i][0] and item['cliente'] == valores_v[i][2] and item['detalhe'] == valores_v[i][3]:
+                                                item['comissao'] = ganho
+                                                break
                     except Exception as e:
                         print(f"   Erro na venda linha {i}: {e}")
                         continue
             
+            # Calcula a comissão total
+            comissao_total = fat_bruto * (comissao_base / 100) if comissao_base > 0 else 0
+            comissao_total += bonus_vip_total
+            
             print(f"   Cortes VIP do barbeiro: {cortes_vip_contador}")
             
             # ========== 9. CALCULAR OCUPAÇÃO ==========
-            tempo_total = len(servicos_lista) * 45
+            # Usa atendimentos únicos para ocupação
+            tempo_total = len(atendimentos_unicos) * 45
             tempo_disponivel = dias_trab * 480
             ocupacao = (tempo_total / tempo_disponivel * 100) if tempo_disponivel > 0 else 0
             
@@ -341,7 +375,8 @@ class RelatoriosService:
             print(f"Bônus VIP (cortes): R$ {bonus_vip_total:.2f}")
             print(f"Total Comissão: R$ {comissao_total:.2f}")
             print(f"Cortes VIP do barbeiro: {cortes_vip_contador}")
-            print(f"Atendimentos: {len(servicos_lista)}")
+            print(f"Atendimentos únicos: {len(atendimentos_unicos)}")
+            print(f"Total serviços: {len(servicos_lista)}")
             print(f"Ocupação: {ocupacao:.1f}%")
             print(f"Meta Atingida: {perc_atingido:.1f}%")
             print(f"===============================\n")
@@ -351,7 +386,7 @@ class RelatoriosService:
                 'totalVendas': fat_bruto,
                 'valorUnitarioCesta': bonus_vip_total,
                 'totalComissao': comissao_total,
-                'qtdAtendimentosReais': len(servicos_lista),
+                'qtdAtendimentosReais': len(atendimentos_unicos),
                 'qtdVips': cortes_vip_contador,
                 'percComissaoBase': comissao_base,
                 'metaValor': meta_periodo,

@@ -2,6 +2,7 @@ import os
 import json
 import gspread
 from google.oauth2 import service_account
+from datetime import datetime
 
 class GoogleSheetsService:
     
@@ -81,8 +82,6 @@ class GoogleSheetsService:
             print(f"❌ Erro ao acessar aba '{nome_aba}': {e}")
             return None
     
-    # ==================== MÉTODO ADICIONADO ====================
-    
     def delete_row(self, sheet_name, row_number):
         """
         Deleta uma linha específica de uma aba
@@ -95,3 +94,11 @@ class GoogleSheetsService:
         except Exception as e:
             print(f"❌ Erro ao deletar linha {row_number} da aba {sheet_name}: {e}")
             return False
+    
+    def get_data_formatada(self, data=None):
+        """
+        Retorna a data formatada como dd/mm/yyyy
+        """
+        if not data:
+            data = datetime.now()
+        return data.strftime("%d/%m/%Y")

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Fechamento - Barber App</title>
+  <title>Prestação de Contas - Barber App</title>
   <style>
     * {
       margin: 0;
@@ -227,35 +227,153 @@
       display: block;
     }
     
-    .tabela-container {
+    .vip-card {
+      background: #11141b;
+      border: 1px solid #ffcc00;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      text-align: center;
       display: none;
-      overflow-x: auto;
     }
     
-    table {
-      width: 100%;
-      border-collapse: collapse;
+    .vip-card h3 {
+      color: #ffcc00;
+      font-size: 12px;
+      margin-bottom: 8px;
     }
     
-    th {
-      background: #080a0f;
-      color: #00ffff;
-      padding: 10px;
-      text-align: left;
-      font-size: 11px;
-      border-bottom: 2px solid #00ffff;
+    .vip-card .valor-grande {
+      font-size: 24px;
       font-weight: bold;
+      color: #ffcc00;
     }
     
-    td {
-      padding: 10px;
-      border-bottom: 1px solid #1c212a;
+    .vip-card .detalhe {
+      font-size: 11px;
+      color: #888;
+      margin-top: 5px;
+    }
+    
+    .meta-container {
+      background: #11141b;
+      border: 1px solid #1f232d;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    
+    .meta-info {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
       font-size: 12px;
     }
     
-    .vip {
-      color: #00ffff;
+    .progress-bg {
+      background: #2d323a;
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      background: linear-gradient(90deg, #00ffff, #50e3c2);
+      height: 100%;
+      width: 0%;
+      transition: width 0.5s ease;
+      border-radius: 4px;
+    }
+    
+    .data-group {
+      background: #11141b;
+      border-radius: 12px;
+      border: 1px solid #1f232d;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    
+    .data-header {
+      background: #1a1d23;
+      padding: 12px 15px;
+      border-bottom: 1px solid #2d323a;
       font-weight: bold;
+      color: #00ffff;
+      font-size: 14px;
+    }
+    
+    .cliente-group {
+      border-bottom: 1px solid #1f232d;
+    }
+    
+    .cliente-group:last-child {
+      border-bottom: none;
+    }
+    
+    .cliente-header {
+      background: #1a1d23;
+      padding: 12px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    
+    .cliente-header:hover {
+      background: #22262f;
+    }
+    
+    .cliente-info {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .cliente-nome {
+      font-weight: bold;
+      color: #00ffff;
+      font-size: 14px;
+    }
+    
+    .cliente-valores {
+      font-size: 11px;
+      color: #888;
+      margin-top: 2px;
+    }
+    
+    .cliente-valores .pago {
+      color: #50e3c2;
+    }
+    
+    .cliente-total {
+      font-weight: bold;
+      font-size: 14px;
+      color: #50e3c2;
+    }
+    
+    .servicos-lista {
+      padding: 10px 15px 15px 35px;
+      display: block;
+    }
+    
+    .servico-item {
+      padding: 6px 0;
+      font-size: 12px;
+      color: #ccc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .servico-icon {
+      color: #00ffff;
+      font-size: 12px;
+    }
+    
+    .vip-icon {
+      color: #ffcc00;
+      margin-left: 5px;
+      font-size: 10px;
     }
     
     .sem-dados {
@@ -287,13 +405,34 @@
         font-size: 14px;
       }
       
-      .nome {
-        font-size: 14px;
+      .vip-card .valor-grande {
+        font-size: 20px;
       }
       
-      .foto {
-        width: 50px;
-        height: 50px;
+      .data-header {
+        font-size: 12px;
+        padding: 10px 12px;
+      }
+      
+      .cliente-header {
+        padding: 8px 12px;
+      }
+      
+      .cliente-nome {
+        font-size: 12px;
+      }
+      
+      .cliente-valores {
+        font-size: 9px;
+      }
+      
+      .cliente-total {
+        font-size: 12px;
+      }
+      
+      .servico-item {
+        font-size: 10px;
+        padding: 4px 0;
       }
     }
     
@@ -311,25 +450,18 @@
         display: none !important;
       }
       
-      .info-card {
+      .info-card,
+      .dashboard,
+      .vip-card,
+      .meta-container,
+      .data-group {
         display: block !important;
-        border: 1px solid #000;
-        background: #fff !important;
+        border: 1px solid #ccc;
+        background: #fff;
       }
       
-      .dashboard {
-        display: grid !important;
-      }
-      
-      .card {
-        border: 1px solid #ccc !important;
-      }
-      
-      .foto {
-        border: 2px solid #000;
-      }
-      
-      .card .valor {
+      .card .valor,
+      .vip-card .valor-grande {
         color: #000;
       }
     }
@@ -341,7 +473,7 @@
       <button class="btn-voltar-img" onclick="voltarDashboard()">
         <img src="https://lh3.googleusercontent.com/u/0/d/1V1WBS99sZAVN_6oBqmD1xa8MtOxBd73l" alt="VOLTAR">
       </button>
-      <h1>📊 FECHAMENTO</h1>
+      <h1>💰 PRESTAÇÃO DE CONTAS</h1>
       <button class="btn-pdf" onclick="window.print()">PDF</button>
     </div>
     
@@ -388,45 +520,55 @@
       <button class="btn-gerar" id="btnGerar" onclick="gerarRelatorio()">GERAR RELATÓRIO</button>
     </div>
     
+    <div id="vipCard" class="vip-card">
+      <h3>⭐ CORTES ASSINATURA (VIP)</h3>
+      <div class="valor-grande" id="qtdVips">0</div>
+      <div class="detalhe">R$ <span id="valorPorCorteVip">0,00</span> por corte VIP</div>
+      <div class="detalhe">Bônus Total: R$ <span id="bonusVipTotal">0,00</span></div>
+    </div>
+    
     <div id="dashboard" class="dashboard">
       <div class="card">
-        <h3>BRUTO</h3>
-        <div id="bruto" class="valor">R$ 0,00</div>
-        <span id="qtdAtendimentos" class="detalhe">0 atend.</span>
+        <h3>📊 ATENDIMENTOS</h3>
+        <div class="valor" id="totalAtendimentos">0</div>
+        <div class="detalhe">Avulsos: <span id="avulsos">0</span> | VIP: <span id="vip">0</span></div>
       </div>
       <div class="card">
-        <h3>BÔNUS VIP</h3>
-        <div id="bonusVip" class="valor">R$ 0,00</div>
-        <span id="qtdVips" class="detalhe">0 VIPs</span>
+        <h3>💰 FATURAMENTO</h3>
+        <div class="valor" id="faturamentoAvulso">R$ 0,00</div>
+        <div class="detalhe">Comissão: R$ <span id="comissaoAvulsa">0,00</span></div>
       </div>
       <div class="card">
-        <h3>LÍQUIDO</h3>
-        <div id="liquido" class="valor" style="color: #00ffff;">R$ 0,00</div>
-        <span id="comissaoBase" class="detalhe">Comissão: 0%</span>
+        <h3>🏆 TOTAL A RECEBER</h3>
+        <div class="valor" id="totalReceber">R$ 0,00</div>
+        <div class="detalhe">Comissão + Bônus VIP</div>
       </div>
       <div class="card">
-        <h3>OCUPAÇÃO</h3>
-        <div id="ocupacao" class="valor">0%</div>
-        <span class="detalhe">Eficiência</span>
+        <h3>⚡ OCUPAÇÃO</h3>
+        <div class="valor" id="ocupacao">0%</div>
+        <div class="detalhe">Eficiência no período</div>
       </div>
     </div>
     
-    <div id="tabelaContainer" class="tabela-container">
-      <table>
-        <thead>
-          <tr>
-            <th>DATA</th>
-            <th>SERVIÇO</th>
-            <th style="text-align: right">VALOR</th>
-          </tr>
-        </thead>
-        <tbody id="tabelaBody">
-          <tr>
-            <td colspan="3" class="sem-dados">Nenhum serviço encontrado</td>
-          </tr>
-        </tbody>
-      </table>
+    <div id="metaContainer" class="meta-container">
+      <div class="meta-info">
+        <span>📈 META DO PERÍODO</span>
+        <span id="metaValor">R$ 0,00</span>
+      </div>
+      <div class="progress-bg">
+        <div class="progress-fill" id="metaBar" style="width: 0%"></div>
+      </div>
+      <div class="meta-info" style="margin-top: 8px;">
+        <span>COMISSÃO REALIZADA</span>
+        <span id="comissaoRealizada">R$ 0,00</span>
+      </div>
+      <div class="meta-info">
+        <span>ATINGIMENTO</span>
+        <span id="metaPercent">0%</span>
+      </div>
     </div>
+    
+    <div id="conteudo"></div>
   </div>
   
   <script>
@@ -440,8 +582,6 @@
       })
       .then(res => res.json())
       .then(user => {
-        console.log('✅ Usuário:', user);
-        // Verifica se tem nome (indica que está logado)
         if (!user.nome) {
           document.body.innerHTML = '<div style="color:red; padding:20px;">❌ Você não está logado! <br> Faça login em /dashboard primeiro.</div>';
           return;
@@ -457,7 +597,6 @@
         carregarBarbeiros();
       })
       .catch(err => {
-        console.error('❌ Erro:', err);
         document.body.innerHTML = '<div style="color:red; padding:20px;">❌ Erro: ' + err.message + '</div>';
       });
     };
@@ -466,12 +605,7 @@
       fetch('/api/barbeiros/listar', {
         credentials: 'include'
       })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error('Erro ao carregar barbeiros');
-        }
-        return res.json();
-      })
+      .then(res => res.json())
       .then(lista => {
         const select = document.getElementById('barbeiro');
         select.innerHTML = '<option value="">Selecionar barbeiro...</option>';
@@ -483,7 +617,6 @@
         });
       })
       .catch(err => {
-        console.error('Erro:', err);
         document.getElementById('barbeiro').innerHTML = '<option value="">Erro ao carregar</option>';
       });
     }
@@ -495,13 +628,8 @@
       const assinatura = document.getElementById('assinatura').value;
       const percentualCasa = document.getElementById('percentualCasa').value;
       
-      if (!barbeiro) {
-        alert('Selecione um barbeiro!');
-        return;
-      }
-      
-      if (!dataInicio || !dataFim) {
-        alert('Selecione as datas!');
+      if (!barbeiro || !dataInicio || !dataFim) {
+        alert('Preencha todos os campos!');
         return;
       }
       
@@ -510,8 +638,10 @@
       btn.textContent = 'PROCESSANDO...';
       
       document.getElementById('dashboard').style.display = 'none';
-      document.getElementById('tabelaContainer').style.display = 'none';
+      document.getElementById('vipCard').style.display = 'none';
+      document.getElementById('metaContainer').style.display = 'none';
       document.getElementById('infoCard').style.display = 'none';
+      document.getElementById('conteudo').innerHTML = '';
       
       fetch('/api/relatorios/fechamento', {
         method: 'POST',
@@ -526,9 +656,7 @@
         })
       })
       .then(res => {
-        if (!res.ok) {
-          throw new Error(`Erro HTTP: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
       .then(dados => {
@@ -540,6 +668,7 @@
           return;
         }
         
+        // Informações do barbeiro
         const dataInicioFormat = dataInicio.split('-').reverse().join('/');
         const dataFimFormat = dataFim.split('-').reverse().join('/');
         
@@ -548,43 +677,158 @@
         document.getElementById('periodo').textContent = `Período: ${dataInicioFormat} até ${dataFimFormat}`;
         document.getElementById('infoCard').style.display = 'block';
         
-        document.getElementById('bruto').textContent = `R$ ${(dados.totalVendas || 0).toFixed(2)}`;
-        document.getElementById('bonusVip').textContent = `R$ ${(dados.valorUnitarioCesta || 0).toFixed(2)}`;
-        document.getElementById('liquido').textContent = `R$ ${(dados.totalComissao || 0).toFixed(2)}`;
-        document.getElementById('qtdAtendimentos').textContent = `${dados.qtdAtendimentosReais || 0} atend.`;
-        document.getElementById('qtdVips').textContent = `${dados.qtdVips || 0} VIPs`;
-        document.getElementById('comissaoBase').textContent = `Comissão: ${dados.percComissaoBase || 0}%`;
+        // Card VIP
+        const qtdVips = dados.qtdVips || 0;
+        const bonusVipTotal = dados.valorUnitarioCesta || 0;
+        const valorPorCorte = qtdVips > 0 ? bonusVipTotal / qtdVips : 0;
+        
+        document.getElementById('qtdVips').textContent = qtdVips;
+        document.getElementById('valorPorCorteVip').textContent = valorPorCorte.toFixed(2);
+        document.getElementById('bonusVipTotal').textContent = bonusVipTotal.toFixed(2);
+        
+        if (qtdVips > 0) {
+          document.getElementById('vipCard').style.display = 'block';
+        }
+        
+        // Cards principais
+        const totalAtendimentos = dados.qtdAtendimentosReais || 0;
+        const faturamentoAvulso = dados.totalVendas || 0;
+        const percComissao = dados.percComissaoBase || 0;
+        const comissaoAvulsa = (faturamentoAvulso * percComissao / 100) || 0;
+        const totalReceber = dados.totalComissao || 0;
+        
+        document.getElementById('totalAtendimentos').textContent = totalAtendimentos;
+        document.getElementById('avulsos').textContent = (totalAtendimentos - qtdVips);
+        document.getElementById('vip').textContent = qtdVips;
+        document.getElementById('faturamentoAvulso').textContent = `R$ ${faturamentoAvulso.toFixed(2)}`;
+        document.getElementById('comissaoAvulsa').textContent = comissaoAvulsa.toFixed(2);
+        document.getElementById('totalReceber').textContent = `R$ ${totalReceber.toFixed(2)}`;
         document.getElementById('ocupacao').textContent = `${(dados.taxaOcupacao || 0).toFixed(1)}%`;
         
         document.getElementById('dashboard').style.display = 'grid';
         
-        const tbody = document.getElementById('tabelaBody');
-        if (dados.servicos && dados.servicos.length > 0) {
-          let html = '';
-          dados.servicos.forEach(servico => {
-            const vipClass = servico.isVip ? 'vip' : '';
-            const vipMark = servico.isVip ? ' ✓' : '';
-            html += `
-              <tr>
-                <td>${servico.data}</td>
-                <td class="${vipClass}">${servico.detalhe}${vipMark}</td>
-                <td style="text-align: right">R$ ${servico.valor.toFixed(2)}</td>
-              </tr>
+        // Meta
+        const metaValor = dados.metaValor || 0;
+        const metaPercent = dados.metaPercent || 0;
+        const comissaoRealizada = dados.totalComissao || 0;
+        
+        document.getElementById('metaValor').textContent = `R$ ${metaValor.toFixed(2)}`;
+        document.getElementById('comissaoRealizada').textContent = `R$ ${comissaoRealizada.toFixed(2)}`;
+        document.getElementById('metaPercent').textContent = `${metaPercent.toFixed(1)}%`;
+        document.getElementById('metaBar').style.width = `${Math.min(metaPercent, 100)}%`;
+        
+        const metaElement = document.getElementById('metaPercent');
+        metaElement.style.color = metaPercent >= 100 ? '#50e3c2' : '#ff8888';
+        
+        document.getElementById('metaContainer').style.display = 'block';
+        
+        // ========== AGRUPAR POR DATA E CLIENTE ==========
+        const servicos = dados.servicos || [];
+        const diasMap = {};
+        
+        servicos.forEach(servico => {
+          const data = servico.data;
+          const cliente = servico.cliente || 'Cliente';
+          const valor = servico.valor || 0;
+          const detalhe = servico.detalhe;
+          const isVip = servico.isVip || false;
+          
+          if (!diasMap[data]) {
+            diasMap[data] = {
+              data: data,
+              clientes: {}
+            };
+          }
+          
+          if (!diasMap[data].clientes[cliente]) {
+            diasMap[data].clientes[cliente] = {
+              cliente: cliente,
+              totalPago: 0,
+              servicos: [],
+              isVipCliente: false
+            };
+          }
+          
+          // ACUMULA VALOR
+          diasMap[data].clientes[cliente].totalPago += valor;
+          
+          // ADICIONA O SERVIÇO À LISTA (USANDO PUSH)
+          diasMap[data].clientes[cliente].servicos.push({
+            nome: detalhe,
+            isVip: isVip
+          });
+          
+          if (isVip) {
+            diasMap[data].clientes[cliente].isVipCliente = true;
+          }
+        });
+        
+        // Ordenar datas (mais recente primeiro)
+        const datasOrdenadas = Object.keys(diasMap).sort((a, b) => b.localeCompare(a));
+        
+        let htmlFinal = '';
+        datasOrdenadas.forEach(data => {
+          const dia = diasMap[data];
+          const clientes = Object.values(dia.clientes);
+          
+          htmlFinal += `<div class="data-group">`;
+          htmlFinal += `<div class="data-header">📅 ${data}</div>`;
+          
+          clientes.forEach(cliente => {
+            // Gera a lista de serviços (todos os serviços do cliente)
+            const servicosHTML = cliente.servicos.map(s => {
+              const isCorte = s.nome.toUpperCase().includes('CORTE');
+              // Mostra ícone VIP apenas para CORTE (e se o cliente for VIP)
+              const vipIcon = (cliente.isVipCliente && isCorte) ? '<span class="vip-icon">⭐ VIP</span>' : '';
+              return `
+                <div class="servico-item">
+                  <span class="servico-icon">✂️</span>
+                  <span>${s.nome}${vipIcon}</span>
+                </div>
+              `;
+            }).join('');
+            
+            htmlFinal += `
+              <div class="cliente-group">
+                <div class="cliente-header" onclick="toggleCliente(this)">
+                  <div class="cliente-info">
+                    <span class="cliente-nome">👤 ${cliente.cliente}</span>
+                    <span class="cliente-valores">
+                      <span class="pago">PAGOU: R$ ${cliente.totalPago.toFixed(2)}</span>
+                    </span>
+                  </div>
+                  <span class="cliente-total">${cliente.servicos.length} serviço(s)</span>
+                </div>
+                <div class="servicos-lista" style="display: block;">
+                  ${servicosHTML}
+                </div>
+              </div>
             `;
           });
-          tbody.innerHTML = html;
-        } else {
-          tbody.innerHTML = '<tr><td colspan="3" class="sem-dados">Nenhum serviço encontrado no período</td></tr>';
+          
+          htmlFinal += `</div>`;
+        });
+        
+        if (datasOrdenadas.length === 0) {
+          htmlFinal = '<div class="sem-dados">Nenhum atendimento encontrado no período</div>';
         }
         
-        document.getElementById('tabelaContainer').style.display = 'block';
+        document.getElementById('conteudo').innerHTML = htmlFinal;
       })
       .catch(err => {
         btn.disabled = false;
         btn.textContent = 'GERAR RELATÓRIO';
-        console.error('Erro:', err);
         alert('Erro ao gerar relatório: ' + err.message);
       });
+    }
+    
+    function toggleCliente(element) {
+      const servicosLista = element.nextElementSibling;
+      if (servicosLista.style.display === 'none') {
+        servicosLista.style.display = 'block';
+      } else {
+        servicosLista.style.display = 'none';
+      }
     }
   </script>
 </body>
