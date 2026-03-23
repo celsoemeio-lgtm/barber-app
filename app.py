@@ -3,30 +3,86 @@ from functools import wraps
 from datetime import datetime
 
 from config import Config
-from services.google_sheets import GoogleSheetsService
-from services.auth_service import AuthService
-from services.agenda_service import AgendaService
-from services.clientes_service import ClientesService
-from services.servicos_service import ServicosService
-from services.barbeiros_service import BarbeirosService
-from services.vendas_service import VendasService
-from services.relatorios_service import RelatoriosService
 
 app = Flask(__name__)
 app.config.from_object(Config)
 app.secret_key = Config.SECRET_KEY
 
-# Inicializa serviços
-sheets_service = GoogleSheetsService()
-auth_service = AuthService(sheets_service)
-agenda_service = AgendaService(sheets_service)
-clientes_service = ClientesService(sheets_service)
-servicos_service = ServicosService(sheets_service)
-barbeiros_service = BarbeirosService(sheets_service)
-vendas_service = VendasService(sheets_service)
-relatorios_service = RelatoriosService(sheets_service)
+# ========== VARIÁVEIS GLOBAIS PARA SERVIÇOS (LAZY LOADING) ==========
+_sheets_service = None
+_auth_service = None
+_agenda_service = None
+_clientes_service = None
+_servicos_service = None
+_barbeiros_service = None
+_vendas_service = None
+_relatorios_service = None
 
-# Decorator de login
+def get_sheets_service():
+    global _sheets_service
+    if _sheets_service is None:
+        print("🔄 Inicializando GoogleSheetsService...")
+        from services.google_sheets import GoogleSheetsService
+        _sheets_service = GoogleSheetsService()
+    return _sheets_service
+
+def get_auth_service():
+    global _auth_service
+    if _auth_service is None:
+        print("🔄 Inicializando AuthService...")
+        from services.auth_service import AuthService
+        _auth_service = AuthService(get_sheets_service())
+    return _auth_service
+
+def get_agenda_service():
+    global _agenda_service
+    if _agenda_service is None:
+        print("🔄 Inicializando AgendaService...")
+        from services.agenda_service import AgendaService
+        _agenda_service = AgendaService(get_sheets_service())
+    return _agenda_service
+
+def get_clientes_service():
+    global _clientes_service
+    if _clientes_service is None:
+        print("🔄 Inicializando ClientesService...")
+        from services.clientes_service import ClientesService
+        _clientes_service = ClientesService(get_sheets_service())
+    return _clientes_service
+
+def get_servicos_service():
+    global _servicos_service
+    if _servicos_service is None:
+        print("🔄 Inicializando ServicosService...")
+        from services.servicos_service import ServicosService
+        _servicos_service = ServicosService(get_sheets_service())
+    return _servicos_service
+
+def get_barbeiros_service():
+    global _barbeiros_service
+    if _barbeiros_service is None:
+        print("🔄 Inicializando BarbeirosService...")
+        from services.barbeiros_service import BarbeirosService
+        _barbeiros_service = BarbeirosService(get_sheets_service())
+    return _barbeiros_service
+
+def get_vendas_service():
+    global _vendas_service
+    if _vendas_service is None:
+        print("🔄 Inicializando VendasService...")
+        from services.vendas_service import VendasService
+        _vendas_service = VendasService(get_sheets_service())
+    return _vendas_service
+
+def get_relatorios_service():
+    global _relatorios_service
+    if _relatorios_service is None:
+        print("🔄 Inicializando RelatoriosService...")
+        from services.relatorios_service import RelatoriosService
+        _relatorios_service = RelatoriosService(get_sheets_service())
+    return _relatorios_service
+
+# ========== DECORATORS ==========
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -57,7 +113,7 @@ def login():
         return render_template('Login.html')
     
     data = request.get_json()
-    resultado = auth_service.validar_login_barbeiro(data['user'], data['pass'])
+    resultado = get_auth_service().validar_login_barbeiro(data['user'], data['pass'])
     
     if resultado['sucesso']:
         session['user'] = {
@@ -78,7 +134,7 @@ def login_cliente_page():
 @app.route('/login_cliente', methods=['POST'])
 def login_cliente():
     data = request.get_json()
-    resultado = auth_service.gerenciar_acesso_cliente(data)
+    resultado = get_auth_service().gerenciar_acesso_cliente(data)
     
     if resultado['status'] in ["EXISTENTE", "NOVO"]:
         session['user'] = {
@@ -96,16 +152,14 @@ def login_cliente():
 
 # ==================== ROTAS DO CLIENTE (LINK SEPARADO) ====================
 
-# NOVA ROTA PARA O LINK SEPARADO (página HTML)
 @app.route('/cliente', methods=['GET'])
 def cliente_login_separado():
     return render_template('login_cliente.html')
 
-# NOVA API PARA AUTENTICAÇÃO DO CLIENTE VIA LINK SEPARADO
 @app.route('/cliente/auth', methods=['POST'])
 def cliente_auth_separado():
     data = request.get_json()
-    resultado = auth_service.gerenciar_acesso_cliente(data)
+    resultado = get_auth_service().gerenciar_acesso_cliente(data)
     
     if resultado['status'] in ["EXISTENTE", "NOVO"]:
         session['user'] = {
@@ -126,11 +180,9 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
-# ==================== ROTA USUÁRIO ATUAL (CORRIGIDA) ====================
 @app.route('/api/usuario_atual')
 def usuario_atual():
     if 'user' in session:
-        # Adiciona o campo logado explicitamente
         user_data = session['user'].copy()
         user_data['logado'] = True
         return jsonify(user_data)
@@ -212,7 +264,7 @@ def dados_agenda():
 @login_required
 def api_agenda_dados():
     data = request.get_json()
-    resultado = agenda_service.get_dados_painel_diario(data['data'])
+    resultado = get_agenda_service().get_dados_painel_diario(data['data'])
     return jsonify(resultado)
 
 @app.route('/api/agenda/preparar', methods=['POST'])
@@ -227,21 +279,21 @@ def api_agenda_preparar():
 def api_agenda_salvar():
     dados = request.get_json()
     dados['isAdm'] = (session['user']['tipo'] == 'BARBEIRO')
-    resultado = agenda_service.salvar_agendamento(dados)
+    resultado = get_agenda_service().salvar_agendamento(dados)
     return jsonify(resultado)
 
 @app.route('/api/agenda/cancelar', methods=['POST'])
 @login_required
 def api_agenda_cancelar():
     dados = request.get_json()
-    resultado = agenda_service.cancelar_agendamento(dados)
+    resultado = get_agenda_service().cancelar_agendamento(dados)
     return jsonify(resultado)
 
 @app.route('/api/agenda/listar')
 @login_required
 @admin_required
 def api_agenda_listar():
-    resultado = agenda_service.listar_agenda()
+    resultado = get_agenda_service().listar_agenda()
     return jsonify(resultado)
 
 @app.route('/api/agenda/excluir', methods=['POST'])
@@ -249,7 +301,7 @@ def api_agenda_listar():
 @admin_required
 def api_agenda_excluir():
     dados = request.get_json()
-    resultado = agenda_service.excluir_linha_agenda(dados)
+    resultado = get_agenda_service().excluir_linha_agenda(dados)
     return jsonify(resultado)
 
 # ==================== API CLIENTES ====================
@@ -258,9 +310,9 @@ def api_agenda_excluir():
 @login_required
 def api_clientes_listar():
     if session['user']['tipo'] == 'BARBEIRO' and session['user'].get('nivel') == 'ADM':
-        clientes = clientes_service.listar_clientes()
+        clientes = get_clientes_service().listar_clientes()
     else:
-        clientes = clientes_service.buscar_nomes_clientes()
+        clientes = get_clientes_service().buscar_nomes_clientes()
     return jsonify(clientes)
 
 @app.route('/api/clientes/salvar', methods=['POST'])
@@ -268,7 +320,7 @@ def api_clientes_listar():
 @admin_required
 def api_clientes_salvar():
     dados = request.get_json()
-    resultado = clientes_service.salvar_cliente(
+    resultado = get_clientes_service().salvar_cliente(
         dados['nome'],
         dados['whats'],
         dados['plano'],
@@ -279,7 +331,7 @@ def api_clientes_salvar():
 @app.route('/api/clientes/nomes')
 @login_required
 def api_clientes_nomes():
-    nomes = clientes_service.buscar_nomes_clientes()
+    nomes = get_clientes_service().buscar_nomes_clientes()
     return jsonify(nomes)
 
 # ==================== API SERVIÇOS ====================
@@ -287,13 +339,13 @@ def api_clientes_nomes():
 @app.route('/api/servicos/listar')
 @login_required
 def api_servicos_listar():
-    servicos = servicos_service.listar_servicos()
+    servicos = get_servicos_service().listar_servicos()
     return jsonify(servicos)
 
 @app.route('/api/servicos/nomes')
 @login_required
 def api_servicos_nomes():
-    servicos = servicos_service.listar_nomes_servicos()
+    servicos = get_servicos_service().listar_nomes_servicos()
     return jsonify(servicos)
 
 @app.route('/api/servicos/salvar', methods=['POST'])
@@ -301,7 +353,7 @@ def api_servicos_nomes():
 @admin_required
 def api_servicos_salvar():
     dados = request.get_json()
-    resultado = servicos_service.salvar_servico(dados['nome'], dados['preco'])
+    resultado = get_servicos_service().salvar_servico(dados['nome'], dados['preco'])
     return jsonify({'status': resultado})
 
 # ==================== API BARBEIROS ====================
@@ -309,7 +361,7 @@ def api_servicos_salvar():
 @app.route('/api/barbeiros/listar')
 @login_required
 def api_barbeiros_listar():
-    nomes = barbeiros_service.listar_nomes()
+    nomes = get_barbeiros_service().listar_nomes()
     return jsonify(nomes)
 
 @app.route('/api/barbeiros/buscar', methods=['POST'])
@@ -317,7 +369,7 @@ def api_barbeiros_listar():
 @admin_required
 def api_barbeiros_buscar():
     dados = request.get_json()
-    resultado = barbeiros_service.buscar_dados(dados['nome'])
+    resultado = get_barbeiros_service().buscar_dados(dados['nome'])
     return jsonify(resultado)
 
 @app.route('/api/barbeiros/salvar', methods=['POST'])
@@ -325,14 +377,14 @@ def api_barbeiros_buscar():
 @admin_required
 def api_barbeiros_salvar():
     dados = request.get_json()
-    resultado = barbeiros_service.salvar(dados)
+    resultado = get_barbeiros_service().salvar(dados)
     return jsonify({'status': resultado})
 
 @app.route('/api/barbeiros/foto', methods=['POST'])
 @login_required
 def api_barbeiros_foto():
     dados = request.get_json()
-    foto = auth_service.buscar_foto_barbeiro(dados['nome'])
+    foto = get_auth_service().buscar_foto_barbeiro(dados['nome'])
     return jsonify({'foto': foto})
 
 # ==================== API VENDAS ====================
@@ -342,7 +394,7 @@ def api_barbeiros_foto():
 def api_vendas_dados_iniciais():
     if session['user']['tipo'] != 'BARBEIRO':
         return jsonify({'erro': 'Acesso negado'}), 403
-    resultado = vendas_service.get_dados_iniciais()
+    resultado = get_vendas_service().get_dados_iniciais()
     return jsonify(resultado)
 
 @app.route('/api/vendas/finalizar', methods=['POST'])
@@ -351,7 +403,7 @@ def api_vendas_finalizar():
     if session['user']['tipo'] != 'BARBEIRO':
         return jsonify({'erro': 'Acesso negado'}), 403
     dados = request.get_json()
-    resultado = vendas_service.processar_venda(dados)
+    resultado = get_vendas_service().processar_venda(dados)
     return jsonify(resultado)
 
 # ==================== API RELATÓRIOS ====================
@@ -370,10 +422,9 @@ def api_relatorios_diario():
         data = dados['data']
         nome_barbeiro = session['user']['nome']
         
-        # Log para debug no servidor
         print(f"🔍 Relatório diário - Data: {data}, Barbeiro: {nome_barbeiro}")
         
-        resultado = relatorios_service.get_dados_relatorio_diario(data, nome_barbeiro)
+        resultado = get_relatorios_service().get_dados_relatorio_diario(data, nome_barbeiro)
         
         return jsonify(resultado)
     
@@ -386,7 +437,6 @@ def api_relatorios_diario():
 
 @app.route('/api/relatorios/fechamento', methods=['POST'])
 @login_required
-# @admin_required  # REMOVIDO - Agora USER também pode acessar
 def api_relatorios_fechamento():
     try:
         dados = request.get_json()
@@ -395,7 +445,7 @@ def api_relatorios_fechamento():
         
         print(f"🔍 Fechamento - Barbeiro: {dados.get('barbeiro')}, Datas: {dados.get('data_inicio')} a {dados.get('data_fim')}")
         
-        resultado = relatorios_service.obter_fechamento_unificado(
+        resultado = get_relatorios_service().obter_fechamento_unificado(
             dados.get('barbeiro'),
             dados.get('data_inicio'),
             dados.get('data_fim'),
@@ -421,7 +471,7 @@ def api_relatorios_gerencial():
         if not dados:
             return jsonify({'erro': 'Dados não fornecidos'}), 400
         
-        resultado = relatorios_service.get_relatorio_gerencial(
+        resultado = get_relatorios_service().get_relatorio_gerencial(
             dados.get('data_inicio'),
             dados.get('data_fim')
         )

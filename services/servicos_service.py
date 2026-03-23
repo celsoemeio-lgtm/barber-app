@@ -1,88 +1,117 @@
 from config import Config
+from datetime import datetime
+import time
 
-class ServicosService:
+class ClientesService:
     def __init__(self, sheets_service):
         self.sheets = sheets_service
+        self._cache = {}
+        self._cache_time = {}
+        self._cache_ttl = 60  # 60 segundos de cache
     
-    def listar_servicos(self):
-        """Retorna lista de serviços com preços da planilha"""
+    def _get_cache(self, key):
+        """Retorna valor do cache se ainda for válido"""
+        if key in self._cache and key in self._cache_time:
+            if time.time() - self._cache_time[key] < self._cache_ttl:
+                return self._cache[key]
+        return None
+    
+    def _set_cache(self, key, value):
+        """Guarda valor no cache"""
+        self._cache[key] = value
+        self._cache_time[key] = time.time()
+    
+    def listar_clientes(self):
+        """Retorna lista de todos os clientes com cache"""
+        cache_key = "listar_clientes"
+        cached = self._get_cache(cache_key)
+        if cached:
+            print("📦 Usando cache de clientes")
+            return cached
+        
         try:
-            print("\n🔍 BUSCANDO SERVIÇOS NA PLANILHA...")
-            valores = self.sheets.get_all_values(Config.SHEETS['servicos'])
+            valores = self.sheets.get_all_values(Config.SHEETS['clientes'])
+            clientes = []
             
-            print(f"📊 Total de linhas na planilha: {len(valores)}")
-            print(f"📋 Cabeçalho: {valores[0] if valores else 'Vazio'}")
-            
-            servicos = []
             for i in range(1, len(valores)):
                 linha = valores[i]
-                if len(linha) >= 1 and linha[0].strip():
-                    nome = linha[0].strip()
-                    
-                    # Pega o preço da coluna B (índice 1)
-                    preco_str = linha[1] if len(linha) > 1 else "0"
-                    print(f"   Linha {i}: {nome} - Preço bruto: '{preco_str}'")
-                    
-                    # Converte preço corretamente
-                    try:
-                        # Remove R$, espaços, troca vírgula por ponto
-                        preco_limpo = str(preco_str).replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
-                        preco = float(preco_limpo) if preco_limpo else 0
-                        print(f"      ✅ Convertido: {preco}")
-                    except Exception as e:
-                        print(f"      ⚠️ Erro na conversão: {e}")
-                        preco = 0
-                    
-                    servicos.append({
-                        'nome': nome,
-                        'preco': preco
-                    })
-            
-            print(f"\n✅ Total de serviços carregados: {len(servicos)}")
-            return servicos
-        except Exception as e:
-            print(f"❌ Erro ao listar serviços: {e}")
-            import traceback
-            traceback.print_exc()
-            return []
-    
-    def listar_nomes_servicos(self):
-        """Retorna apenas nomes para select (com preço formatado)"""
-        try:
-            servicos = self.listar_servicos()
-            nomes = []
-            for s in servicos:
-                preco_formatado = f"{s['preco']:.2f}".replace('.', ',')
-                nomes.append({
-                    'nome': s['nome'],
-                    'preco': preco_formatado
+                clientes.append({
+                    'nome': linha[0] if len(linha) > 0 else "",
+                    'whatsapp': linha[1] if len(linha) > 1 else "",
+                    'plano': linha[2] if len(linha) > 2 else ""
                 })
-            return nomes
+            
+            self._set_cache(cache_key, clientes)
+            return clientes
         except Exception as e:
-            print(f"❌ Erro ao listar nomes: {e}")
+            print(f"Erro ao listar clientes: {e}")
             return []
     
-    def salvar_servico(self, nome, preco):
-        """Salva ou edita um serviço"""
+    def salvar_cliente(self, nome, whats, plano, idx=None):
+        """Salva ou edita um cliente e limpa o cache"""
         try:
-            aba = self.sheets.get_aba(Config.SHEETS['servicos'])
-            valores = aba.get_all_values()
+            aba = self.sheets.get_aba(Config.SHEETS['clientes'])
             
-            linha_edit = -1
-            for i in range(1, len(valores)):
-                if valores[i][0].lower() == nome.lower():
-                    linha_edit = i + 1
-                    break
-            
-            # Converte preço de formato brasileiro para número
-            preco_limpo = preco.replace('.', '').replace(',', '.').strip()
-            preco_num = float(preco_limpo)
-            
-            if linha_edit != -1:
-                aba.update_cell(linha_edit, 2, preco_num)
+            if idx is not None and idx != "":
+                linha_editar = int(idx) + 2
+                aba.update_cell(linha_editar, 1, nome)
+                aba.update_cell(linha_editar, 2, whats)
+                aba.update_cell(linha_editar, 3, plano)
             else:
-                aba.append_row([nome, preco_num])
+                data_hoje = self.sheets.get_data_formatada()
+                aba.append_row([nome, whats, plano, data_hoje])
+            
+            # Limpa cache após alteração
+            self._cache.pop("listar_clientes", None)
+            self._cache.pop("buscar_nomes_clientes", None)
             
             return "ok"
         except Exception as e:
             return f"Erro: {e}"
+    
+    def buscar_nomes_clientes(self):
+        """Retorna apenas os nomes dos clientes com cache"""
+        cache_key = "buscar_nomes_clientes"
+        cached = self._get_cache(cache_key)
+        if cached:
+            print("📦 Usando cache de nomes de clientes")
+            return cached
+        
+        try:
+            valores = self.sheets.get_all_values(Config.SHEETS['clientes'])
+            nomes = []
+            
+            for i in range(1, len(valores)):
+                if valores[i][0]:
+                    nomes.append(valores[i][0].strip())
+            
+            resultado = sorted(nomes)
+            self._set_cache(cache_key, resultado)
+            return resultado
+        except Exception as e:
+            print(f"Erro ao buscar nomes: {e}")
+            return []
+    
+    def buscar_cliente_por_whats(self, whats):
+        """Busca cliente pelo WhatsApp (sem cache, pois é consulta pontual)"""
+        try:
+            valores = self.sheets.get_all_values(Config.SHEETS['clientes'])
+            whats_limpo = ''.join(filter(str.isdigit, whats))
+            
+            for i in range(1, len(valores)):
+                linha = valores[i]
+                if len(linha) < 2:
+                    continue
+                
+                whats_planilha = ''.join(filter(str.isdigit, linha[1]))
+                
+                if whats_planilha == whats_limpo:
+                    return {
+                        'nome': linha[0],
+                        'whatsapp': linha[1],
+                        'plano': linha[2] if len(linha) > 2 else "Avulso"
+                    }
+            return None
+        except Exception as e:
+            print(f"Erro ao buscar por WhatsApp: {e}")
+            return None
