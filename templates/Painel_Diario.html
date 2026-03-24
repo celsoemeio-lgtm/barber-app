@@ -96,13 +96,29 @@
 
     function carregarMapa() {
       const data = document.getElementById("dataMapa").value;
+      console.log("🚀 Carregando mapa para data:", data);
+      
       fetch('/api/agenda/dados', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({data: data})
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ data: data })
       })
-      .then(res => res.json())
-      .then(desenharGrid);
+      .then(res => {
+        console.log("📡 Status da resposta:", res.status);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(res => {
+        console.log("✅ Dados recebidos:", res);
+        desenharGrid(res);
+      })
+      .catch(err => {
+        console.error("❌ Erro ao carregar mapa:", err);
+        document.getElementById('painelGrid').innerHTML = `<div style="color:red; text-align:center; padding:20px;">Erro ao carregar agenda: ${err.message}</div>`;
+      });
     }
 
     function desenharGrid(res) {
@@ -136,7 +152,8 @@
 
       fetch('/api/agenda/preparar', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           data: data,
           horario: hora,
@@ -144,8 +161,13 @@
           cliente: nomeParaOForm,
           tipoLogin: usuarioAtual.tipo
         })
-      }).then(() => {
+      })
+      .then(() => {
         window.location.href = '/form_agendamento';
+      })
+      .catch(err => {
+        console.error("Erro ao preparar agendamento:", err);
+        alert("Erro ao agendar. Tente novamente.");
       });
     }
 
