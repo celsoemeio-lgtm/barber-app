@@ -11,3 +11,4 @@ service-account.json
 # Ambiente
 .vscode/
 .DS_Store
+*.crdownload
