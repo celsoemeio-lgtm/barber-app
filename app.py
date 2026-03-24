@@ -263,9 +263,18 @@ def dados_agenda():
 @app.route('/api/agenda/dados', methods=['POST'])
 @login_required
 def api_agenda_dados():
-    data = request.get_json()
-    resultado = get_agenda_service().get_dados_painel_diario(data['data'])
-    return jsonify(resultado)
+    try:
+        print("🔍 Chamando api_agenda_dados...")
+        data = request.get_json()
+        print(f"📅 Data recebida: {data}")
+        resultado = get_agenda_service().get_dados_painel_diario(data['data'])
+        print(f"✅ Resultado: {len(resultado.get('grade', []))} linhas")
+        return jsonify(resultado)
+    except Exception as e:
+        import traceback
+        print("❌ ERRO em /api/agenda/dados:")
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/agenda/preparar', methods=['POST'])
 @login_required
