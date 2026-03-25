@@ -18,6 +18,8 @@
       background: var(--card-bg); padding: 30px; border-radius: 8px; 
       border: 1px solid var(--border); width: 100%; max-width: 320px; 
       text-align: center; box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+      position: relative;
+      z-index: 2;
     }
     h2 { color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; }
     p { font-size: 13px; color: #8b949e; margin-bottom: 20px; }
@@ -35,8 +37,54 @@
       text-transform: uppercase; transition: 0.3s;
     }
     button:hover { background: #00cccc; box-shadow: 0 0 10px var(--accent); }
+    button:disabled { background: #444; color: #888; cursor: not-allowed; }
     
     .hidden { display: none; }
+    
+    /* LOADING OVERLAY */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(7, 9, 15, 0.95);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      backdrop-filter: blur(5px);
+      transition: all 0.3s ease;
+    }
+    
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(0, 255, 255, 0.2);
+      border-top: 4px solid #00ffff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      color: #00ffff;
+      font-size: 14px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    
+    .loading-sub {
+      color: #888;
+      font-size: 11px;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -46,14 +94,21 @@
     <div id="step1">
       <p>Informe seu WhatsApp para acessar:</p>
       <input type="tel" id="whatsapp" placeholder="(00) 00000-0000" maxlength="15" oninput="mascaraTel(this)">
-      <button onclick="verificar()">PRÓXIMO</button>
+      <button id="btnProximo" onclick="verificar()">PRÓXIMO</button>
     </div>
 
     <div id="step2" class="hidden">
       <p>Novo por aqui?<br>Qual o seu nome?</p>
       <input type="text" id="nome_novo" placeholder="Digite seu nome">
-      <button onclick="cadastrar()">FINALIZAR CADASTRO</button>
+      <button id="btnCadastrar" onclick="cadastrar()">FINALIZAR CADASTRO</button>
     </div>
+  </div>
+
+  <!-- LOADING OVERLAY (inicialmente oculto) -->
+  <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">CARREGANDO</div>
+    <div class="loading-sub">Aguarde um momento...</div>
   </div>
 
   <script>
@@ -65,41 +120,78 @@
       i.value = v;
     }
 
+    function mostrarLoading() {
+      document.getElementById('loadingOverlay').style.display = 'flex';
+    }
+
+    function esconderLoading() {
+      document.getElementById('loadingOverlay').style.display = 'none';
+    }
+
     function verificar() {
       const cel = document.getElementById('whatsapp').value;
-      if (cel.length < 14) return alert("Por favor, digite o número completo.");
+      if (cel.length < 14) {
+        alert("Por favor, digite o número completo.");
+        return;
+      }
+
+      // Mostra loading enquanto espera
+      mostrarLoading();
 
       fetch('/login_cliente', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({celular: cel})
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ celular: cel })
       })
       .then(res => res.json())
       .then(res => {
+        esconderLoading();
+        
         if (res.status === "EXISTENTE") {
           window.location.href = res.redirect;
         } else {
           document.getElementById('step1').classList.add('hidden');
           document.getElementById('step2').classList.remove('hidden');
         }
+      })
+      .catch(err => {
+        esconderLoading();
+        console.error('Erro:', err);
+        alert('Erro de conexão. Tente novamente.');
       });
     }
 
     function cadastrar() {
       const nome = document.getElementById('nome_novo').value;
       const cel = document.getElementById('whatsapp').value;
-      if (!nome) return alert("Por favor, digite seu nome.");
+      
+      if (!nome) {
+        alert("Por favor, digite seu nome.");
+        return;
+      }
+
+      // Mostra loading enquanto espera
+      mostrarLoading();
 
       fetch('/login_cliente', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({nome: nome, celular: cel})
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ nome: nome, celular: cel })
       })
       .then(res => res.json())
       .then(res => {
+        esconderLoading();
+        
         if (res.success) {
           window.location.href = res.redirect;
         }
+      })
+      .catch(err => {
+        esconderLoading();
+        console.error('Erro:', err);
+        alert('Erro de conexão. Tente novamente.');
       });
     }
   </script>
