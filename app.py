@@ -154,7 +154,7 @@ def login_cliente():
 
 @app.route('/cliente', methods=['GET'])
 def cliente_login_separado():
-    return render_template('login_cliente.html')
+    return render_template('Login_Cliente.html')
 
 @app.route('/cliente/auth', methods=['POST'])
 def cliente_auth_separado():
